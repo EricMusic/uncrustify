@@ -68,6 +68,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		65431F121096439C0022481F /* tricky_msg_send_align.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = tricky_msg_send_align.m; sourceTree = "<group>"; };
 		654C6B42108ED8FC00556CD9 /* real_world_file.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = real_world_file.m; sourceTree = "<group>"; };
 		654C6C70108F238800556CD9 /* 50050-real_world_file.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "50050-real_world_file.m"; sourceTree = "<group>"; };
 		654C6DA7108F629F00556CD9 /* 50060-oc-split.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "50060-oc-split.m"; sourceTree = "<group>"; };
@@ -1598,6 +1599,7 @@
 				654C6B42108ED8FC00556CD9 /* real_world_file.m */,
 				654C6FB2108FB40D00556CD9 /* more_blocks.m */,
 				654C70BA1090E89400556CD9 /* blocks.m */,
+				65431F121096439C0022481F /* tricky_msg_send_align.m */,
 			);
 			path = oc;
 			sourceTree = "<group>";
