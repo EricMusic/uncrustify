@@ -1772,10 +1772,9 @@ static void align_oc_msg_colon(int span)
          continue;
       }
 
+      cas.Reset();
       nas.Reset();
       nas.m_right_align = true;
-
-      cas.Start(span);
 
       level = pc->level;
       pc = chunk_get_next_ncnl(pc, CNAV_PREPROC);
@@ -1792,22 +1791,24 @@ static void align_oc_msg_colon(int span)
             {
                ++lcnt;
             }
+            has_colon = false;
             did_line = false;
-            has_colon = !has_colon;
          }
-         else if (!did_line && lcnt - 1 < span && (pc->type == CT_OC_COLON) )
+         else if (!did_line && lcnt < span && (pc->type == CT_OC_COLON) )
          {
-            has_colon = true;
             cas.Add(pc);
             tmp = chunk_get_prev(pc);
             if ((tmp != NULL) && ((tmp->type == CT_WORD) || (tmp->type == CT_TYPE)))
             {
                nas.Add(tmp);
             }
+            has_colon = true;
             did_line = true;
          }
          pc = chunk_get_next(pc, CNAV_PREPROC);
+         if (lcnt >= span) break;
       }
+
       nas.End();
       cas.End();
    }
