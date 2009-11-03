@@ -328,6 +328,8 @@ void AlignStack::Flush()
    int last_seqnum = 0;
    int idx;
    int tmp_col;
+   int oc_msg_fix_pt;
+   int oc_msg_delta;
    const ChunkStack::Entry *ce = NULL;
    chunk_t                 *pc;
 
@@ -335,12 +337,13 @@ void AlignStack::Flush()
 
    m_last_added = 0;
    m_max_col    = 0;
+   oc_msg_delta = 0;
 
    /* Recalculate the max_col - it may have shifted since the last Add() */
    for (idx = 0; idx < m_aligned.Len(); idx++)
    {
       pc = m_aligned.Get(idx)->m_pc;
-
+      
       /* Set the column adjust and gap */
       int col_adj = 0;
       int gap     = 0;
@@ -361,20 +364,35 @@ void AlignStack::Flush()
       }
       if (m_right_align)
       {
-         /* Adjust the width for signed numbers */
-         int start_len = pc->align.start->len;
-         if (pc->align.start->type == CT_NEG)
+         if (m_align_oc_msg)
          {
-            tmp = chunk_get_next(pc->align.start);
-            if ((tmp != NULL) && (tmp->type == CT_NUMBER))
+            if (idx == 0) 
             {
-               start_len += tmp->len;
+               oc_msg_fix_pt = (pc->column + pc->align.start->len);
             }
+            else 
+            {
+               oc_msg_delta = (oc_msg_fix_pt - (pc->column + pc->align.start->len));
+            }
+            col_adj = oc_msg_delta;
+            pc->align.col_adj = col_adj;
          }
-         col_adj += start_len;
+         else 
+         {
+            /* Adjust the width for signed numbers */
+            int start_len = pc->align.start->len;
+            if (pc->align.start->type == CT_NEG)
+            {
+               tmp = chunk_get_next(pc->align.start);
+               if ((tmp != NULL) && (tmp->type == CT_NUMBER))
+               {
+                  start_len += tmp->len;
+               }
+            }
+            col_adj += start_len;
+            pc->align.col_adj = col_adj;
+         }
       }
-
-      pc->align.col_adj = col_adj;
 
       /* See if this pushes out the max_col */
       int endcol = pc->column + col_adj;
@@ -396,15 +414,25 @@ void AlignStack::Flush()
       {
          pc->flags |= PCF_ALIGN_START;
 
-         pc->align.right_align = m_right_align;
-         pc->align.amp_style   = (int)m_amp_style;
-         pc->align.star_style  = (int)m_star_style;
-         pc->align.gap         = m_gap;
+         pc->align.right_align  = m_right_align;
+         pc->align.oc_msg_align = m_align_oc_msg;
+         pc->align.amp_style    = (int)m_amp_style;
+         pc->align.star_style   = (int)m_star_style;
+         pc->align.gap          = m_gap;
       }
       pc->align.next = m_aligned.GetChunk(idx + 1);
 
-      /* Indent the token, taking col_adj into account */
-      tmp_col = m_max_col - pc->align.col_adj;
+      
+      if (m_align_oc_msg)
+      {
+         /* slightly different version for OC_COLON alignment */
+         tmp_col = oc_msg_fix_pt - m_max_col;
+      }
+      else
+      {
+         /* Indent the token, taking col_adj into account */
+         tmp_col = m_max_col - pc->align.col_adj;
+      }
       LOG_FMT(LAS, "%s: line %d: '%.*s' to col %d (adj=%d)\n", __func__,
               pc->orig_line, pc->len, pc->str, tmp_col, pc->align.col_adj);
       align_to_column(pc, tmp_col);

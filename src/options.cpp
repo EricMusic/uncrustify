@@ -863,10 +863,13 @@ void register_options(void)
                   "The span for aligning on '#define' bodies (0=don't align)", "", 0, 5000);
    unc_add_option("align_left_shift", UO_align_left_shift, AT_BOOL,
                   "Align lines that start with '<<' with previous '<<'. Default=true");
-
+   
    unc_add_option("align_oc_msg_colon_span", UO_align_oc_msg_colon_span, AT_NUM,
                   "Span for aligning parameters in an Obj-C message call on the ':' (0=don't align)", 0, 5000);
-
+   unc_add_option("align_oc_msg_on_first_colon", UO_align_oc_msg_on_first_colon, AT_BOOL,
+                  "If a line has multiple colons in an Obj-C msg send, align consecutive\n"
+                  "msg send lines with the first of these colons or with the last");
+   
    unc_begin_group(UG_comment, "Comment modifications");
    unc_add_option("cmt_width", UO_cmt_width, AT_NUM,
                   "Try to wrap comments at cmt_width columns", "", 16, 256);

@@ -3814,6 +3814,7 @@ static void handle_oc_message_send(chunk_t *os)
    for (tmp = chunk_get_next(os); tmp != cs; tmp = chunk_get_next(tmp))
    {
       tmp->parent_type = CT_OC_MSG;
+      tmp->flags |= PCF_DONT_INDENT;
       if (tmp->type == CT_COLON)
       {
          tmp->type = CT_OC_COLON;

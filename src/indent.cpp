@@ -143,7 +143,7 @@ void align_to_column(chunk_t *pc, int column)
    {
       return;
    }
-
+   
    LOG_FMT(LINDLINE, "%s: %d] col %d on %.*s [%s] => %d\n",
            __func__, pc->orig_line, pc->column, pc->len, pc->str,
            get_token_name(pc->type), column);
@@ -173,6 +173,15 @@ void align_to_column(chunk_t *pc, int column)
          almod = (chunk_is_single_line_comment(pc) &&
                   cpd.settings[UO_indent_relative_single_line_comments].b) ?
                  ALMODE_KEEP_REL : ALMODE_KEEP_ABS;
+      }
+      else if (pc->align.oc_msg_align)
+      {
+         /* keep relative positions for aligning OC_COLONs in OC_MSGs 
+            using the oc_msg_align field is more restrictive than using
+            pc->parent_type with CT_OC_MSG or CT_OC_BLOCK_EXPR as we really
+            just want to align selector colons and not string literals or
+            dictionary keys as is common for Cocoa code. */
+         almod = ALMODE_KEEP_REL;
       }
 
       if (almod == ALMODE_KEEP_ABS)
@@ -734,7 +743,8 @@ void indent_text(void)
          /* Always indent on virtual braces */
          indent_column_set(frm.pse[frm.pse_tos].indent_tmp);
       }
-      else if (pc->type == CT_BRACE_OPEN)
+      else if ((pc->type == CT_BRACE_OPEN) && 
+               (pc->parent_type != CT_OC_BLOCK_EXPR))
       {
          frm.level++;
          indent_pse_push(frm, pc);

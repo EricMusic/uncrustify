@@ -28,13 +28,17 @@ public:
    int        m_nl_seqnum;
    int        m_gap;
    bool       m_right_align;
+   bool       m_align_oc_msg;       /* Use a slightly different algorithm for aligning OC_COLONs in OC_MSGs */
+                                    /* This is somewhat of a hack since its currently only needed to properly */ 
+                                    /* align OC_COLONS in OC_MSGs while leaving user-aligned, spaced-over-multiple-lines */
+                                    /* OC_MSG calls. Alignment by hand is quite commong for longer OC_MSGs */
    StarStyle  m_star_style;
    StarStyle  m_amp_style;
 
 
    AlignStack() :
       m_max_col(0), m_min_col(0), m_span(0), m_thresh(0), m_seqnum(0),
-      m_nl_seqnum(0), m_gap(0), m_right_align(false),
+      m_nl_seqnum(0), m_gap(0), m_right_align(false), m_align_oc_msg(false),
       m_star_style(SS_IGNORE), m_amp_style(SS_IGNORE),
       m_last_added(0)
    {
