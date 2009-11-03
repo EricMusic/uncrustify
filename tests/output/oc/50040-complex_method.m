@@ -14,9 +14,9 @@
             // The error object should include an (unhelpful)
             // explanation of what happened
             NSDictionary * userInfoDict = [NSDictionary dictionaryWithObjectsAndKeys:
-                                           @"Internal error formatting data", NSLocalizedDescriptionKey,
-                                           @"Archiving of data failed. Probably a bug.", NSLocalizedFailureReasonErrorKey,
-                                           @"There's nothing you can do.", NSLocalizedRecoverySuggestionErrorKey, nil];
+                                               @"Internal error formatting data", NSLocalizedDescriptionKey,
+                                               @"Archiving of data failed. Probably a bug.", NSLocalizedFailureReasonErrorKey,
+                                               @"There's nothing you can do.", NSLocalizedRecoverySuggestionErrorKey, nil];
 
             *outError = [NSError errorWithDomain:LinearInternalErrorDomain
                                             code:linErrCantFormatDocumentData
