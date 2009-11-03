@@ -425,7 +425,13 @@ void indent_text(void)
       {
          parent_token_indent = token_indent(pc->parent_type);
       }
-
+      
+      if (pc->parent_type == CT_OC_BLOCK_EXPR) 
+      {
+         /* quick fix for avoiding excessive indentation of already indented lines in ObjC block expressions */
+         return;
+      }
+      
       /* Clean up after a #define, etc */
       if (!in_preproc)
       {
@@ -719,7 +725,7 @@ void indent_text(void)
                          (!cpd.settings[UO_indent_braces_no_func].b ||
                           (pc->parent_type != CT_FUNC_DEF)));
       }
-
+      
       if (pc->type == CT_BRACE_CLOSE)
       {
          if (frm.pse[frm.pse_tos].type == CT_BRACE_OPEN)
@@ -731,7 +737,8 @@ void indent_text(void)
             frm.level--;
          }
       }
-      else if (pc->type == CT_VBRACE_OPEN)
+      else if (pc->type == CT_VBRACE_OPEN && 
+               pc->parent_type != CT_OC_BLOCK_EXPR)
       {
          frm.level++;
          indent_pse_push(frm, pc);
@@ -743,8 +750,7 @@ void indent_text(void)
          /* Always indent on virtual braces */
          indent_column_set(frm.pse[frm.pse_tos].indent_tmp);
       }
-      else if ((pc->type == CT_BRACE_OPEN) && 
-               (pc->parent_type != CT_OC_BLOCK_EXPR))
+      else if ((pc->type == CT_BRACE_OPEN))
       {
          frm.level++;
          indent_pse_push(frm, pc);

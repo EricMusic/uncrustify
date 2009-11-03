@@ -1799,6 +1799,7 @@ static void align_oc_msg_colon(int span)
 {
    chunk_t    *pc = chunk_get_head();
    chunk_t    *tmp;
+   chunk_t    *next;
    chunk_t    *candidate = NULL; /* candidate for aligning to the rightmost colon of a line */
    AlignStack cas;               /* for the colons */
    AlignStack nas;               /* for the parameter tag */
@@ -1844,6 +1845,7 @@ static void align_oc_msg_colon(int span)
                }
                candidate = NULL;
             }
+            
             if (!has_colon)
             {
                ++lcnt;
@@ -1871,32 +1873,31 @@ static void align_oc_msg_colon(int span)
                 (last_col != pc->orig_col) &&   /* no need to align originally aligned chunks */
                 (next_line_has_oc_msg_colon(pc, &prev_result, level)))
             {
-               candidate = pc;
-
                /* take orig_col in case any indentation steps already clobbered column */
+               candidate = pc;
                last_col = (candidate->orig_col == candidate->column ? candidate->column : candidate->orig_col);
                
-               /* skip remaining colon in same line and continue with next line... */
+               /* align to first: skip remaining colons in the same line and continue with next line... */
                if (cpd.settings[UO_align_oc_msg_on_first_colon].b) 
                {
                   while ((pc = chunk_get_next_nc(pc, CNAV_PREPROC)) != NULL) 
                   {
                      if (((pc->type == CT_SQUARE_CLOSE) && (pc->level == level)) || pc->type == CT_NEWLINE)
                      {
-                        pc = chunk_get_prev(pc, CNAV_PREPROC);
+                        pc = chunk_get_prev_nc(pc, CNAV_PREPROC);
                         break;
                      }
                   }
                }
-               else /* ...or when aligning on last colon be sure to add other colons coming on the same line before the last colon to the AlignStack */
-               {                  
-                  if (!first_line)
+               else /* align to last */
+               {    
+                  do
                   {
-                     do
+                     if (1 /* first_line */) 
                      {
                         if (((pc->type == CT_SQUARE_CLOSE) && (pc->level == level)) || pc->type == CT_NEWLINE)
                         {
-                           pc = chunk_get_prev(pc, CNAV_PREPROC);
+                           pc = chunk_get_prev_nc(pc, CNAV_PREPROC);
                            break;
                         } 
                         else if (pc->type == CT_OC_COLON)
@@ -1904,25 +1905,23 @@ static void align_oc_msg_colon(int span)
                            last_col = (pc->orig_col == pc->column ? pc->column : pc->orig_col);
                            
                            cas.Add(pc);
-                           tmp = chunk_get_prev(pc);
+                           tmp = chunk_get_prev_nc(pc);
                            if ((tmp != NULL) && ((tmp->type == CT_WORD) || (tmp->type == CT_TYPE)))
                            {
                               nas.Add(tmp);
                            }
-                        }   
-                     } 
-                     while ((pc = chunk_get_next(pc, CNAV_PREPROC)) != NULL);
-
-                  }
+                        }
+                     }
+                  } 
+                  while ((pc = chunk_get_next_nc(pc, CNAV_PREPROC)) != NULL);
                }
-
             }
             else /* not a newline or OC_COLON: reset candidate */
             {
                candidate = NULL;               
             }
          }
-         pc = chunk_get_next(pc, CNAV_PREPROC);
+         pc = chunk_get_next_nc(pc, CNAV_PREPROC);
       }
       
       nas.End();
