@@ -23,16 +23,18 @@ void AlignStack::Start(int span, int thresh)
 
    m_aligned.Reset();
    m_skipped.Reset();
-   m_span        = span;
-   m_thresh      = thresh;
-   m_min_col     = 9999;
-   m_max_col     = 0;
-   m_nl_seqnum   = 0;
-   m_seqnum      = 0;
-   m_gap         = 0;
-   m_right_align = false;
-   m_star_style  = SS_IGNORE;
-   m_amp_style   = SS_IGNORE;
+   m_span         = span;
+   m_thresh       = thresh;
+   m_min_col      = 9999;
+   m_max_col      = 0;
+   m_nl_seqnum    = 0;
+   m_seqnum       = 0;
+   m_gap          = 0;
+   m_right_align  = false;
+   m_oc_msg_align = false;
+   m_oc_msg_lines = 0;
+   m_star_style   = SS_IGNORE;
+   m_amp_style    = SS_IGNORE;
 }
 
 
@@ -69,7 +71,7 @@ void AlignStack::ReAddSkipped()
  * @param pc      The chunk
  * @param seqnum  Optional seqnum (0=assign one)
  */
-void AlignStack::Add(chunk_t *start, int seqnum)
+void AlignStack::Add(chunk_t *start, int seqnum, int oc_line, int oc_line_start, int oc_line_end, int oc_ref_colon)
 {
    /* Assign a seqnum if needed */
    if (seqnum == 0)
@@ -89,6 +91,8 @@ void AlignStack::Add(chunk_t *start, int seqnum)
    int gap;
 
    m_last_added = 0;
+   
+   m_oc_msg_lines += (oc_line > m_oc_msg_lines ? 1 : 0);
 
    /* Check threshold limits */
    if ((m_max_col == 0) || (m_thresh == 0) ||
@@ -247,9 +251,13 @@ void AlignStack::Add(chunk_t *start, int seqnum)
       //         ref->len, ref->str, get_token_name(ref->type), ref->column,
       //         col_adj, endcol, m_star_style, m_amp_style, gap);
 
-      ali->align.col_adj = col_adj;
-      ali->align.ref     = ref;
-      ali->align.start   = start;
+      ali->align.col_adj           = col_adj;
+      ali->align.ref               = ref;
+      ali->align.start             = start;
+      ali->align.oc_msg_line       = oc_line;
+      ali->align.oc_msg_line_start = oc_line_start;
+      ali->align.oc_msg_line_end   = oc_line_end;
+      ali->align.oc_ref_colon      = oc_ref_colon;
       m_aligned.Push(ali, seqnum);
       m_last_added = 1;
 
@@ -328,17 +336,34 @@ void AlignStack::Flush()
    int last_seqnum = 0;
    int idx;
    int tmp_col;
-   int oc_msg_fix_pt;
-   int oc_msg_delta;
+   
+   int oc_ref_colon;       /* the reference colon to align other lines to. */
+   int oc_msg_fix_pt;      /* the col of the ref colon. */
+   int oc_msg_delta;       /* col diff between aligned chunk and reference colon. */
+   int oc_line;            /* line number of a multi-line oc msg send. 
+                              If a msg send has three lines this would range from 1 to 3. 
+                              Note that this can differ from idx. */
+   int oc_msg_ref_start;   /* the start col of the line with the ref colon. */
+   int oc_msg_ref_end;     /* the end col of the line with the ref colon. */
+   
    const ChunkStack::Entry *ce = NULL;
    chunk_t                 *pc;
+   chunk_t                 *pcs;
+   
+   bool oc_msg_has_mult_colons  = false;
 
    LOG_FMT(LAS, "Flush (min=%d, max=%d)\n", m_min_col, m_max_col);
 
-   m_last_added = 0;
-   m_max_col    = 0;
-   oc_msg_delta = 0;
-
+   m_last_added     = 0;
+   m_max_col        = 0;
+   
+   oc_msg_delta     = 0;
+   oc_msg_fix_pt    = 0;
+   oc_line          = 0;
+   oc_ref_colon     = 0;
+   oc_msg_ref_start = 0;
+   oc_msg_ref_end   = 0;
+   
    /* Recalculate the max_col - it may have shifted since the last Add() */
    for (idx = 0; idx < m_aligned.Len(); idx++)
    {
@@ -364,36 +389,68 @@ void AlignStack::Flush()
       }
       if (m_right_align)
       {
-         if (m_align_oc_msg)
+         /* Adjust the width for signed numbers */
+         int start_len = pc->align.start->len;
+         if (pc->align.start->type == CT_NEG)
          {
-            if (idx == 0) 
+            tmp = chunk_get_next(pc->align.start);
+            if ((tmp != NULL) && (tmp->type == CT_NUMBER))
             {
-               oc_msg_fix_pt = (pc->column + pc->align.start->len);
+               start_len += tmp->len;
             }
-            else 
-            {
-               oc_msg_delta = (oc_msg_fix_pt - (pc->column + pc->align.start->len));
-            }
-            col_adj = oc_msg_delta;
-            pc->align.col_adj = col_adj;
          }
-         else 
+         col_adj += start_len;
+         pc->align.col_adj = col_adj;
+      } 
+      
+      oc_line = pc->align.oc_msg_line;
+      
+      int oc_msg_start = pc->align.oc_msg_line_start;
+      int oc_msg_end   = pc->align.oc_msg_line_end;
+
+      if (m_oc_msg_align)
+      {
+         pcs = pc->align.start;
+         oc_msg_has_mult_colons = false;
+         
+         if (oc_line == 1) 
          {
-            /* Adjust the width for signed numbers */
-            int start_len = pc->align.start->len;
-            if (pc->align.start->type == CT_NEG)
-            {
-               tmp = chunk_get_next(pc->align.start);
-               if ((tmp != NULL) && (tmp->type == CT_NUMBER))
-               {
-                  start_len += tmp->len;
-               }
-            }
-            col_adj += start_len;
-            pc->align.col_adj = col_adj;
+            oc_msg_delta      = 0;
+            oc_msg_fix_pt     = pc->align.oc_ref_colon;
+            oc_ref_colon      = pcs->align.oc_ref_colon;
+            oc_msg_ref_start  = oc_msg_start;
+            oc_msg_ref_end    = oc_msg_end;
+            
+            col_adj = oc_msg_delta;
+            pc->align.col_adj = col_adj;        
+         }
+         else
+         {
+            /* the reference colon is the colon which should dictate 
+               the amount of col_adj between the alignee and the fix point colon
+               from the first line of the msg send */
+            oc_ref_colon = pcs->align.oc_ref_colon;
+            oc_msg_delta = (oc_msg_fix_pt - oc_ref_colon) + 1;
+            
+//             if ((oc_msg_has_mult_colons) || 
+//                 (oc_msg_colons_for_line(pc, pc->level, true) > 1))
+//             {
+//                oc_msg_has_mult_colons = true;
+//                
+//                col_adj = oc_msg_delta + (oc_msg_start - oc_msg_ref_start);
+//                pc->align.col_adj = col_adj;
+//             }
+//             else 
+//             {
+//                col_adj = oc_msg_delta + (oc_msg_start - oc_msg_ref_start);
+//                pc->align.col_adj = col_adj;               
+//             }
+            
+            col_adj = oc_msg_delta + (oc_msg_start - oc_msg_ref_start);
+            pc->align.col_adj = col_adj; 
          }
       }
-
+      
       /* See if this pushes out the max_col */
       int endcol = pc->column + col_adj;
       if (gap < m_gap)
@@ -410,23 +467,27 @@ void AlignStack::Flush()
    {
       ce = m_aligned.Get(idx);
       pc = ce->m_pc;
+      
+      oc_line = pc->align.oc_msg_line;
+      
       if (idx == 0)
       {
          pc->flags |= PCF_ALIGN_START;
 
-         pc->align.right_align  = m_right_align;
-         pc->align.oc_msg_align = m_align_oc_msg;
-         pc->align.amp_style    = (int)m_amp_style;
-         pc->align.star_style   = (int)m_star_style;
-         pc->align.gap          = m_gap;
+         pc->align.right_align       = m_right_align;
+         pc->align.amp_style         = (int)m_amp_style;
+         pc->align.star_style        = (int)m_star_style;
+         pc->align.gap               = m_gap;
       }
       pc->align.next = m_aligned.GetChunk(idx + 1);
 
-      
-      if (m_align_oc_msg)
+      if (m_oc_msg_align)
       {
-         /* slightly different version for OC_COLON alignment */
-         tmp_col = oc_msg_fix_pt - m_max_col;
+         /* different version for OC_COLON alignment */
+         tmp_col = pc->align.col_adj;
+         
+         pc->align.oc_msg_align = m_oc_msg_align;
+         pc->align.oc_msg_line  = oc_line;
       }
       else
       {
@@ -435,7 +496,17 @@ void AlignStack::Flush()
       }
       LOG_FMT(LAS, "%s: line %d: '%.*s' to col %d (adj=%d)\n", __func__,
               pc->orig_line, pc->len, pc->str, tmp_col, pc->align.col_adj);
-      align_to_column(pc, tmp_col);
+   
+      if (m_oc_msg_align)
+      {
+         if (oc_line != 1)
+            align_to_column(pc, tmp_col, ALMODE_OC_MSG);
+      }
+      else {
+         align_to_column(pc, tmp_col);
+      }
+
+         
    }
 
    if (ce != NULL)

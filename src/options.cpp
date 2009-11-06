@@ -865,10 +865,13 @@ void register_options(void)
                   "Align lines that start with '<<' with previous '<<'. Default=true");
    
    unc_add_option("align_oc_msg_colon_span", UO_align_oc_msg_colon_span, AT_NUM,
-                  "Span for aligning parameters in an Obj-C message call on the ':' (0=don't align)", 0, 5000);
+                  "Span for aligning parameters in an ObjC message call on the ':' (0=don't align)\n"
+                  "Note that the closing square belonging to the same bracket level as the opening square\n"
+                  "will automatically count as fail-out for doing any further alignment.", 0, 5000);
+   
    unc_add_option("align_oc_msg_on_first_colon", UO_align_oc_msg_on_first_colon, AT_BOOL,
-                  "If a line has multiple colons in an Obj-C msg send, align consecutive\n"
-                  "msg send lines with the first of these colons or with the last");
+                  "If a line in an ObjC msg send has multiple colons belonging to the same bracket level, \n"
+                  "align the first or the last of these colons with colons on consecutive lines.");
    
    unc_begin_group(UG_comment, "Comment modifications");
    unc_add_option("cmt_width", UO_cmt_width, AT_NUM,

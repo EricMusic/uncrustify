@@ -175,10 +175,10 @@
     [_window popup];
     
     // Add some watches on the window and application
-    [[NSNotificationCenter defaultCenter] addObserver:self 
-                                             selector:@selector(_windowClosed:) 
-                                             name:NSWindowWillCloseNotification 
-                                             object:_window];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                    selector:@selector(_windowClosed:) 
+                                     name:NSWindowWillCloseNotification 
+                                     object:_window];
    
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_windowShouldClose:) name:NSApplicationDidResignActiveNotification object:nil];
     

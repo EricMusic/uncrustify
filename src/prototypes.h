@@ -69,7 +69,17 @@ std::string op_val_to_string(argtype_e argtype, op_val_t op_val);
 void indent_text(void);
 void indent_preproc(void);
 void indent_to_column(chunk_t *pc, int column);
-void align_to_column(chunk_t *pc, int column);
+
+enum align_mode
+{
+   ALMODE_SHIFT,     /* shift relative to the current column */
+   ALMODE_KEEP_ABS,  /* try to keep the original absolute column */
+   ALMODE_KEEP_REL,  /* try to keep the original gap */
+   ALMODE_OC_MSG,    /* like ALMODE_SHIFT but takes column_indent and the diff  
+                        between ref line and chunk line start into account */
+};
+
+void align_to_column(chunk_t *pc, int column, align_mode mode = ALMODE_SHIFT);
 
 #define reindent_line(pc, col)    reindent_line2(pc, col, __func__, __LINE__)
 void reindent_line2(chunk_t *pc, int column, const char *fcn_name, int lineno);
@@ -87,6 +97,7 @@ void align_struct_initializers(void);
 chunk_t *align_nl_cont(chunk_t *start);
 chunk_t *align_assign(chunk_t *first, int span, int thresh);
 void quick_align_again(void);
+int oc_msg_colons_for_line(chunk_t *pc, int level, bool skip);
 
 
 /*

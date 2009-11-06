@@ -44,3 +44,5 @@
 50081  sp_after_oc_block_caret_force.cfg            oc/more_blocks.m
 50082  sp_after_oc_block_caret_remove.cfg           oc/more_blocks.m
 50083  sp_before_after_oc_block_caret_remove.cfg    oc/more_blocks.m
+
+50090  oc-colon_align.cfg           oc/colon_align.m

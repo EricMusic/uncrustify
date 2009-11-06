@@ -28,7 +28,9 @@ static void align_typedefs(int span);
 static void align_left_shift(void);
 static void align_oc_msg_colon(int span);
 static bool line_has_oc_msg_colon(chunk_t *pc, bool *prev_result, int level);
-static bool next_line_has_oc_msg_colon(chunk_t *pc, bool *prev_result, int level);
+static bool next_line_has_oc_msg_colon(chunk_t *pc, int level);
+static bool prev_line_has_oc_msg_colon(chunk_t *pc, int level);
+static void add_oc_align_group(chunk_t *pc, AlignStack *st, int line_num, int start_col=0, int end_col=0, int ref_colon=0);
 
 /*
  *   Here are the items aligned:
@@ -225,13 +227,14 @@ void quick_align_again(void)
    LOG_FMT(LALAGAIN, "%s:\n", __func__);
    for (pc = chunk_get_head(); pc != NULL; pc = chunk_get_next(pc))
    {
-      if ((pc->align.next != NULL) && (pc->flags & PCF_ALIGN_START))
+      if ((pc->align.next != NULL) && (pc->flags & PCF_ALIGN_START) && !pc->align.oc_msg_align)
       {
          as.Start(100, 0);
-         as.m_right_align = pc->align.right_align;
-         as.m_star_style  = (AlignStack::StarStyle)pc->align.star_style;
-         as.m_amp_style   = (AlignStack::StarStyle)pc->align.amp_style;
-         as.m_gap         = pc->align.gap;
+         as.m_right_align  = pc->align.right_align;
+         as.m_oc_msg_align = pc->align.oc_msg_align;
+         as.m_star_style   = (AlignStack::StarStyle)pc->align.star_style;
+         as.m_amp_style    = (AlignStack::StarStyle)pc->align.amp_style;
+         as.m_gap          = pc->align.gap;
 
          LOG_FMT(LALAGAIN, "   [%.*s:%d]", pc->len, pc->str, pc->orig_line);
          as.Add(pc->align.start);
@@ -263,7 +266,7 @@ void align_all(void)
    {
       align_oc_msg_colon(cpd.settings[UO_align_oc_msg_colon_span].n);
    }
-
+   
    /* Align variable definitions */
    if ((cpd.settings[UO_align_var_def_span].n > 0) ||
        (cpd.settings[UO_align_var_struct_span].n > 0))
@@ -305,6 +308,7 @@ void align_all(void)
    {
       align_same_func_call_params();
    }
+   
    /* Just in case something was aligned out of order... do it again */
    quick_align_again();
 }
@@ -371,11 +375,11 @@ void align_right_comments(void)
          if (pc->parent_type == CT_COMMENT_END)
          {
             prev = chunk_get_prev(pc);
-            if (pc->orig_col <= (prev->orig_col_end + cpd.settings[UO_align_right_cmt_gap].n))
+            if (pc->column <= (prev->orig_col_end + cpd.settings[UO_align_right_cmt_gap].n))
             {
                LOG_FMT(LALTC, "NOT changing END comment on line %d (%d <= %d + %d)\n",
                        pc->orig_line,
-                       pc->orig_col, prev->orig_col_end, cpd.settings[UO_align_right_cmt_gap].n);
+                       pc->column, prev->orig_col_end, cpd.settings[UO_align_right_cmt_gap].n);
                skip = true;
             }
             if (!skip)
@@ -482,7 +486,7 @@ void align_preprocessor(void)
       }
 
       LOG_FMT(LALPP, "%s: define (%.*s) on line %d col %d\n",
-              __func__, pc->len, pc->str, pc->orig_line, pc->orig_col);
+              __func__, pc->len, pc->str, pc->orig_line, pc->column);
 
       cur_as = &as;
       if (pc->type == CT_MACRO_FUNC)
@@ -494,7 +498,7 @@ void align_preprocessor(void)
          pc = chunk_get_next_type(pc, CT_FPAREN_CLOSE, pc->level);
 
          LOG_FMT(LALPP, "%s: jumped to (%.*s) on line %d col %d\n",
-                 __func__, pc->len, pc->str, pc->orig_line, pc->orig_col);
+                 __func__, pc->len, pc->str, pc->orig_line, pc->column);
       }
 
       /* step to the value past the close paren or the macro name */
@@ -509,7 +513,7 @@ void align_preprocessor(void)
       if (!chunk_is_newline(pc))
       {
          LOG_FMT(LALPP, "%s: align on '%.*s', line %d col %d\n",
-                 __func__, pc->len, pc->str, pc->orig_line, pc->orig_col);
+                 __func__, pc->len, pc->str, pc->orig_line, pc->column);
 
          cur_as->Add(pc);
       }
@@ -1051,7 +1055,7 @@ static chunk_t *align_var_def_brace(chunk_t *start, int span, int *p_nl_count)
               cpd.settings[UO_align_single_line_func].b))
          {
             LOG_FMT(LAVDB, "    add=[%.*s] line=%d col=%d level=%d\n",
-                    pc->len, pc->str, pc->orig_line, pc->orig_col, pc->level);
+                    pc->len, pc->str, pc->orig_line, pc->column, pc->level);
 
             as.Add(pc);
             fp_look_bro = (pc->type == CT_FUNC_DEF) &&
@@ -1125,7 +1129,7 @@ static chunk_t *align_var_def_brace(chunk_t *start, int span, int *p_nl_count)
          if (!did_this_line)
          {
             LOG_FMT(LAVDB, "    add=[%.*s] line=%d col=%d level=%d\n",
-                    pc->len, pc->str, pc->orig_line, pc->orig_col, pc->level);
+                    pc->len, pc->str, pc->orig_line, pc->column, pc->level);
 
             as.Add(pc);
 
@@ -1349,7 +1353,7 @@ static chunk_t *scan_ib_line(chunk_t *start, bool first_pass)
    if (pc != NULL)
    {
       LOG_FMT(LSIB, "%s: start=%s col %d/%d line %d\n", __func__,
-              get_token_name(pc->type), pc->column, pc->orig_col, pc->orig_line);
+              get_token_name(pc->type), pc->column, pc->column, pc->orig_line);
    }
 
    while ((pc != NULL) && !chunk_is_newline(pc) &&
@@ -1494,7 +1498,7 @@ static void align_init_brace(chunk_t *start)
    cpd.al_cnt       = 0;
    cpd.al_c99_array = false;
 
-   LOG_FMT(LALBR, "%s: line %d, col %d\n", __func__, start->orig_line, start->orig_col);
+   LOG_FMT(LALBR, "%s: line %d, col %d\n", __func__, start->orig_line, start->column);
 
    pc = chunk_get_next_ncnl(start);
    pc = scan_ib_line(pc, true);
@@ -1686,7 +1690,7 @@ static void align_typedefs(int span)
          if (pc->type == CT_TYPEDEF)
          {
             LOG_FMT(LALTD, "%s: line %d, col %d\n",
-                    __func__, pc->orig_line, pc->orig_col);
+                    __func__, pc->orig_line, pc->column);
             c_typedef = pc;
             c_type    = NULL;
          }
@@ -1759,36 +1763,223 @@ static void align_left_shift(void)
  *                      so that it is possible to have the very last line of a multi
  *                      line OC_MSG return true even though there is no following 
  *                      line with a OC_COLON.
+ *
+ * @param level         the (cached) level of the opening square bracket
+ *
  */
-static bool line_has_oc_msg_colon(chunk_t *pc, bool *prev_result, int level)
+static bool line_has_oc_msg_colon(chunk_t *pc, int level)
 {
    chunk_t * tmp = pc;
    bool result = false;
-   if (*prev_result == true) 
+   
+   /* backtrack to previous newline */
+   if (pc->type == CT_NEWLINE)
    {
-      result = *prev_result;
-      *prev_result = false;
+      int line = pc->orig_line;
+      pc = chunk_get_prev_nl(pc, CNAV_PREPROC);
+      if (pc == NULL) 
+         return false;
+      
+      if (pc->orig_line < (line - 1))
+      {
+         pc = chunk_get_next_ncnl(pc, CNAV_PREPROC);
+         pc = chunk_get_next_nc(pc, CNAV_PREPROC);
+         if (!pc)
+            return false;
+         
+      }
+      if (pc->level <= level)
+      {
+         /* skip to open square */
+         pc = chunk_get_next_type(pc, CT_SQUARE_OPEN, level, CNAV_PREPROC);
+         pc = chunk_get_next_nc(pc, CNAV_PREPROC);
+         if (!pc)
+            return false;
+      }
+   }
+   
+   if ((pc->type == CT_COMMENT) && 
+       (pc->parent_type == CT_COMMENT_WHOLE))
+   {
+      return false;
    }
     
-   while (((tmp = chunk_get_next_nc(tmp, CNAV_PREPROC)) != NULL) && (pc->level > level)) 
+   while (((tmp = chunk_get_next(tmp, CNAV_PREPROC)) != NULL) 
+          && (pc->level > level) 
+          && (tmp->parent_type == CT_OC_MSG))
    {
-      if ((tmp->type == CT_NEWLINE) || (tmp->type == CT_SEMICOLON)) {
+      if ((tmp->type == CT_NEWLINE) || (tmp->type == CT_SEMICOLON)) 
+      {
          break;
       }
       if ((tmp->type == CT_OC_COLON) && (tmp->parent_type == CT_OC_MSG))
       {
          result = true;
-         *prev_result = true;
          break;
       }
    }
    return result;
 }
 
-static bool next_line_has_oc_msg_colon(chunk_t *pc, bool *prev_result, int level)
+static bool next_line_has_oc_msg_colon(chunk_t *pc, int level)
 {
-   chunk_t * tmp = chunk_get_next_type(pc, CT_NEWLINE, -1, CNAV_PREPROC);
-   return line_has_oc_msg_colon(tmp, prev_result, level);
+   chunk_t * tmp = pc;
+   
+   /* if we are already on a newline just get the next chunk */
+   if (tmp->type == CT_NEWLINE)
+   {
+      tmp = chunk_get_next_nc(tmp, CNAV_PREPROC);
+      if (!tmp) 
+         return false;
+   }
+   else
+   {      
+      /* get to next line's start... */   
+      while ((tmp = chunk_get_next_nc(tmp, CNAV_PREPROC)) != NULL)
+      {
+         if (tmp->type == CT_NEWLINE)
+         {
+            tmp = chunk_get_next(tmp, CNAV_PREPROC);
+            break;
+         }
+         if ((tmp->type == CT_SQUARE_CLOSE) && (tmp->level == level)) 
+         {
+            /* fail-out if the msg send ends without a next line */
+            return false;
+         }
+      }
+   }
+   if (!tmp)
+      return false;
+   
+   return line_has_oc_msg_colon(tmp, level);
+}
+
+static bool prev_line_has_oc_msg_colon(chunk_t *pc, int level)
+{
+   chunk_t * tmp = pc;
+   
+   /* need two newlines, first to get this line's start then to get to prev line's start... */   
+   while ((tmp = chunk_get_prev_nc(tmp, CNAV_PREPROC)) != NULL)
+   {
+      if (tmp->type == CT_NEWLINE)
+      {
+            break;
+      }
+      else if ((tmp->type == CT_SQUARE_OPEN) && (tmp->level == level))
+      { 
+         /* ...but only if this is still the same msg send */
+         tmp = chunk_get_next_nc(tmp, CNAV_PREPROC);
+         break;
+      }
+   }
+   
+   if (!tmp)
+      return false;
+   
+   return line_has_oc_msg_colon(tmp, level);
+}
+
+/**
+ * Check if how many CT_OC_COLONs there are on pc's current line.
+ * This function backtracks to the beginning of the msg send if on the same line
+ * or a the last newline before it starts counting.
+ *
+ * This has a few caveats: 
+ *
+ * Do we care about every colon (even those of nested msg sends) or just the 
+ * colons of a particular msg send? 
+ *
+ * If pc is a newline do we care about colons on the next line or the line
+ * ending in this newline? Currently it seems more logical to skip to the next
+ * line, but the behaviour can be set by passing true for the skip param.
+ *
+ * @param level         the level of the opening square bracket or -1 for 
+ *                      all levels.
+ *
+ * @param skip          if pc is a newline, skip to the next line  
+ *                      or rewind to chunk after previous newline? (default: true)
+ *
+ * @return              amount of colons or -1 on error (e.g. tmp becomes NULL etc.).
+ */
+int oc_msg_colons_for_line(chunk_t *pc, int level=-1, bool skip=true)
+{
+   int target_level  = level; 
+   int result        = 0;
+   chunk_t * tmp     = pc;
+   
+   if ((tmp->type == CT_NEWLINE) && skip)
+   {
+      tmp = chunk_get_next(tmp, CNAV_PREPROC);
+   }
+   else
+   {     
+      /* backtrack to either chunk after last newline or
+         chunk after square open which starts the msg send */
+      while (((tmp = chunk_get_prev(tmp, CNAV_PREPROC)) != NULL) && (tmp->level >= level))
+      {
+         if ((tmp->type == CT_NEWLINE) || 
+             (tmp->type == CT_SQUARE_OPEN) || 
+             (tmp->parent_type != CT_OC_MSG)) 
+         {
+            break;
+         }
+      }
+   }
+   
+   if (!tmp) 
+      return -1;
+   
+   while (((tmp = chunk_get_next_nc(tmp, CNAV_PREPROC)) != NULL) && 
+          (tmp->parent_type == CT_OC_MSG) && 
+          ((tmp->level >= target_level) || level == -1))
+   {
+      if ((tmp->type == CT_NEWLINE) || 
+          (tmp->type == CT_SEMICOLON) ||
+          ((tmp->type == CT_SQUARE_CLOSE) && 
+           (tmp->level == target_level))) 
+      {
+         break;
+      }
+      if ((tmp->type == CT_OC_COLON)  && (tmp->level == level))
+      {
+         result += 1;
+      }
+      if (tmp->type == CT_SQUARE_OPEN)
+      {
+         /* skip over nested msg sends */
+         tmp = chunk_get_next_type(tmp, CT_SQUARE_CLOSE, tmp->level, CNAV_PREPROC);
+         if (!tmp) 
+            break;
+      }
+   }
+   
+   LOG_FMT(LOCCOLON, "%s [%.*s%.*s] line %d has %d oc msg colon%s\n", "oc colons", 
+           pc->prev->len, pc->prev->str, pc->len, pc->str, pc->orig_line, result, (result > 1 ? "s" : ""));
+   
+   return result;
+}
+
+
+static void add_oc_align_group(chunk_t *pc, AlignStack *st, int line_num, int start_col, int end_col, int ref_colon)
+{
+   if (!pc)
+      return;
+   
+   if (line_num == 1) 
+   {
+      // add the colon
+      (*st).Add(pc, 0, line_num, start_col, end_col, ref_colon);
+   }
+   else 
+   {
+      // otherwise add the word/type
+      chunk_t *tmp = chunk_get_prev(pc);
+      if ((tmp != NULL) && ((tmp->type == CT_WORD) || (tmp->type == CT_TYPE)))
+      {
+         (*st).Add(tmp, 0, line_num, start_col, end_col, ref_colon);
+      }
+   }
 }
 
 
@@ -1799,16 +1990,22 @@ static void align_oc_msg_colon(int span)
 {
    chunk_t    *pc = chunk_get_head();
    chunk_t    *tmp;
-   chunk_t    *next;
-   chunk_t    *candidate = NULL; /* candidate for aligning to the rightmost colon of a line */
-   AlignStack cas;               /* for the colons */
-   AlignStack nas;               /* for the parameter tag */
+   chunk_t    *colon;            /* the colon to align other chunks to. note: colon really must be a
+                                    colon while all other AlignStack entries following that are words 
+                                    or types. */
+   
+   AlignStack cas;               /* colon align stack */
+   
    int        level;
-   int        lcnt;              /* line count with no colon for span */
+   int        lcnt;              /* line count with no colon for span. becomes fail-out condition if >= span */
+   int        lnum;              /* the line number of a multiline msg send */
    bool       has_colon;
    bool       first_line;        /* is this the first line being aligned? */
-   bool       prev_result;       /* did the prev line have an OC_COLON ? */
-   int        last_col;
+   int        colon_col;         /* column of the alignee (last or first colon of a line dep. on settings) */
+   int        ref_col;           /* the column of the reference colon */
+   int        line_start_col;    /* column of the start of a msg send line */
+   int        line_end_col;      /* column of the end of a msg send line */
+   int        last_skipped_lnum; /* line no of the last skipped line */
 
    while (pc != NULL)
    {
@@ -1817,33 +2014,61 @@ static void align_oc_msg_colon(int span)
          pc = chunk_get_next(pc);
          continue;
       }
-
-      nas.Reset();
-      nas.m_right_align = true;
-      nas.m_align_oc_msg = true;
-
+               
+      cas.Start(span);
+      cas.m_oc_msg_align = true;
+      
       level = pc->level;
       pc    = chunk_get_next_ncnl(pc, CNAV_PREPROC);
+      
+      lnum              = 1;  
+      lcnt              = 0;
+      ref_col           = 0;
+      colon_col         = 0;
+      line_end_col      = 0;  
+      line_start_col    = 0;
+      last_skipped_lnum = 0;
+      
+      colon          = NULL;
+      
+      has_colon      = false;
+      first_line     = true;
 
-      has_colon   = false;
-      first_line  = true;
-      prev_result = false;
-      lcnt        = 0;
-      last_col    = 0;
-
-      while ((pc != NULL))
+      bool has_multiple_colons = false;
+      bool align_on_first      = (cpd.settings[UO_align_oc_msg_on_first_colon].b);
+      
+      while (pc != NULL)
       {
-         if (chunk_is_newline(pc))
+         /* break on closing square */
+         if (pc->level == level)
+            break;
+         
+         if (pc->parent_type == CT_COMMENT_WHOLE)
          {
-            if ((candidate != NULL)) 
+            ++lcnt;
+            if (lcnt >= span)
+               break;
+         }
+         else if (chunk_is_newline(pc))
+         {
+            if (colon != NULL) 
             {
-               cas.Add(candidate);
-               tmp = chunk_get_prev(candidate);
-               if ((tmp != NULL) && ((tmp->type == CT_WORD) || (tmp->type == CT_TYPE)))
+               colon_col      = colon->orig_col;
+               line_end_col   = pc->orig_col;
+               
+               /* figure out col of first statement chunk of line */
+               tmp = chunk_get_prev_nl(colon, CNAV_PREPROC);
+               if (tmp != NULL)
                {
-                  nas.Add(tmp);
+                  tmp = chunk_get_next_nc(tmp, CNAV_PREPROC);
+                  if (tmp != NULL) 
+                  {
+                     line_start_col = tmp->orig_col;
+                  }
                }
-               candidate = NULL;
+               
+               add_oc_align_group(colon, &cas, lnum, line_start_col, line_end_col, colon_col);
+               colon = NULL;
             }
             
             if (!has_colon)
@@ -1855,31 +2080,44 @@ static void align_oc_msg_colon(int span)
                lcnt = 0;
             }
             
-            first_line = false;
-            has_colon = false;
+            ++lnum;
+            
+            first_line          = false;
+            has_colon           = false;
+            has_multiple_colons = false;
             
             if (pc->level <= level)
             {
-               candidate = NULL;
                break;               
             }
          }
-         else if (pc->type == CT_OC_COLON)
+         else if (pc->type == CT_OC_COLON && 
+                  pc->level == level + 1 &&
+                  (next_line_has_oc_msg_colon(pc, level) ||
+                   prev_line_has_oc_msg_colon(pc, level)))
          {
+            
+            if (((ref_col == pc->column) ||      /* no need to align already aligned chunks */
+                 (ref_col == pc->orig_col)))     /* or previously aligned chunks */
+            {
+               last_skipped_lnum = lnum;
+               pc = chunk_get_next(pc, CNAV_PREPROC);
+               continue;
+            }
+            
             has_colon = true;
             
-            if ((lcnt < span) && 
-                (last_col != pc->column) &&     /* no need to align already aligned chunks */
-                (last_col != pc->orig_col) &&   /* no need to align originally aligned chunks */
-                (next_line_has_oc_msg_colon(pc, &prev_result, level)))
-            {
-               /* take orig_col in case any indentation steps already clobbered column */
-               candidate = pc;
-               last_col = (candidate->orig_col == candidate->column ? candidate->column : candidate->orig_col);
-               
-               /* align to first: skip remaining colons in the same line and continue with next line... */
-               if (cpd.settings[UO_align_oc_msg_on_first_colon].b) 
+            /* on the first line we just need to find out the colon for alignment */
+            if (first_line)
+            {               
+               /* align to first */
+               if (align_on_first)
                {
+                  colon = pc;
+                  ref_col = colon->orig_col;
+                  
+                  /* skip remaining colons on the same line and 
+                     continue with next line or stop on closing square */
                   while ((pc = chunk_get_next_nc(pc, CNAV_PREPROC)) != NULL) 
                   {
                      if (((pc->type == CT_SQUARE_CLOSE) && (pc->level == level)) || pc->type == CT_NEWLINE)
@@ -1889,42 +2127,129 @@ static void align_oc_msg_colon(int span)
                      }
                   }
                }
-               else /* align to last */
-               {    
-                  do
+               else /* align on last */
+               {
+                  colon = chunk_get_next_nl(pc, CNAV_PREPROC);
+                  colon = chunk_get_prev_type(colon, CT_OC_COLON, -1);
+                  
+                  if (colon == NULL) 
                   {
-                     if (1 /* first_line */) 
-                     {
-                        if (((pc->type == CT_SQUARE_CLOSE) && (pc->level == level)) || pc->type == CT_NEWLINE)
-                        {
-                           pc = chunk_get_prev_nc(pc, CNAV_PREPROC);
-                           break;
-                        } 
-                        else if (pc->type == CT_OC_COLON)
-                        {
-                           last_col = (pc->orig_col == pc->column ? pc->column : pc->orig_col);
-                           
-                           cas.Add(pc);
-                           tmp = chunk_get_prev_nc(pc);
-                           if ((tmp != NULL) && ((tmp->type == CT_WORD) || (tmp->type == CT_TYPE)))
-                           {
-                              nas.Add(tmp);
-                           }
-                        }
-                     }
-                  } 
-                  while ((pc = chunk_get_next_nc(pc, CNAV_PREPROC)) != NULL);
+                     break;
+                  }
+                  
+                  ref_col = colon->orig_col;
+                  pc = colon;
                }
             }
-            else /* not a newline or OC_COLON: reset candidate */
+            else if ((lcnt < span) && (lnum != last_skipped_lnum))
             {
-               candidate = NULL;               
-            }
+               if (align_on_first)
+               {                  
+                  /* figure out end col of last statement of line */
+                  tmp = chunk_get_next_nl(pc, CNAV_PREPROC);
+                  if (tmp != NULL)
+                  {
+                     line_end_col = tmp->column;
+                  }
+                  
+                  /* figure out col of first statement of line */
+                  tmp = chunk_get_prev_nl(pc, CNAV_PREPROC);
+                  if (tmp != NULL)
+                  {
+                     tmp = chunk_get_next_nc(tmp, CNAV_PREPROC);
+                     if (tmp != NULL) 
+                     {
+                        line_start_col = tmp->orig_col;
+                     }
+                  }
+
+                  add_oc_align_group(pc, &cas, lnum, line_start_col, line_end_col, pc->column);
+                  
+                  while ((pc = chunk_get_next_nc(pc, CNAV_PREPROC)) != NULL) 
+                  {
+                     if (((pc->type == CT_SQUARE_CLOSE) && (pc->level == level)) || pc->type == CT_NEWLINE)
+                     {
+                        pc = chunk_get_prev_nc(pc, CNAV_PREPROC);
+                        break;
+                     }
+                  }
+               }
+               else /* align on last */
+               {
+                  /* lines of a msg send containing multiple 
+                     colons need to be treated differently 
+                     depending on the settings */
+                  if (has_multiple_colons || (oc_msg_colons_for_line(pc, pc->level) > 1)) 
+                  {
+                     /* cache to avoid oc_msg_colons_for_line */
+                     has_multiple_colons = true;
+                     
+                     /* figure out col of first statement of line */
+                     tmp = chunk_get_prev_nl(pc, CNAV_PREPROC);
+                     if (tmp != NULL)
+                     {
+                        tmp = chunk_get_next_nc(tmp, CNAV_PREPROC);
+                        if (tmp != NULL) 
+                        {
+                           line_start_col = tmp->orig_col;
+                        }
+                     }
+                     
+                     /* figure out end col of last statement of line */
+                     tmp = chunk_get_next_nl(pc, CNAV_PREPROC);
+                     if (tmp != NULL)
+                     {
+                        line_end_col = tmp->column;
+                     }
+                     
+                     /* figure out column of the adjusted colon */
+                     tmp = chunk_get_prev_type(tmp, CT_OC_COLON, -1);
+                     if (tmp != NULL) 
+                     {
+                        colon_col = tmp->column;
+                     }
+                     
+                     add_oc_align_group(pc, &cas, lnum, line_start_col, line_end_col, colon_col);
+                     
+                     pc = tmp;
+                  }
+                  else /* single colon */
+                  {                     
+                     /* figure out col of first statement of line */
+                     tmp = chunk_get_prev_nl(pc, CNAV_PREPROC);
+                     if (tmp != NULL)
+                     {
+                        tmp = chunk_get_next_nc(tmp, CNAV_PREPROC);
+                        if (tmp != NULL) 
+                        {
+                           line_start_col = tmp->orig_col;
+                        }
+                     }
+                     
+                     /* figure out end col of last statement of line */
+                     tmp = chunk_get_next_nl(pc, CNAV_PREPROC);
+                     if (tmp != NULL)
+                     {
+                        line_end_col = tmp->column;
+                     }
+                     
+                     colon_col    = pc->column;
+                     
+                     add_oc_align_group(pc, &cas, lnum, line_start_col, line_end_col, colon_col);
+                     
+                  } // if (has_multiple_colons...)
+               }
+               
+            } // if (first_line)
          }
-         pc = chunk_get_next_nc(pc, CNAV_PREPROC);
+         
+         pc = chunk_get_next(pc, CNAV_PREPROC);
+         
+         /* ignore nested msg sends */
+         if (pc->level != level + 1)
+            continue;
       }
       
-      nas.End();
       cas.End();
    }
 }

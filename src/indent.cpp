@@ -128,17 +128,14 @@ void indent_to_column(chunk_t *pc, int column)
    reindent_line(pc, column);
 }
 
-
-enum align_mode
-{
-   ALMODE_SHIFT,     /* shift relative to the current column */
-   ALMODE_KEEP_ABS,  /* try to keep the original absolute column */
-   ALMODE_KEEP_REL,  /* try to keep the original gap */
-};
-
 /* Same as indent_to_column, except we can move both ways */
-void align_to_column(chunk_t *pc, int column)
+void align_to_column(chunk_t *pc, int column, align_mode mode)
 {
+   if (mode == ALMODE_OC_MSG)
+   {
+      column += (pc->column_indent - 1);
+   }
+   
    if (column == pc->column)
    {
       return;
@@ -147,17 +144,17 @@ void align_to_column(chunk_t *pc, int column)
    LOG_FMT(LINDLINE, "%s: %d] col %d on %.*s [%s] => %d\n",
            __func__, pc->orig_line, pc->column, pc->len, pc->str,
            get_token_name(pc->type), column);
-
+   
    int col_delta = column - pc->column;
    int min_col   = column;
    int min_delta;
-
+   
    pc->column = column;
    do
    {
       chunk_t    *next = chunk_get_next(pc);
       chunk_t    *prev;
-      align_mode almod = ALMODE_SHIFT;
+      align_mode almod = mode;
 
       if (next == NULL)
       {
@@ -174,16 +171,7 @@ void align_to_column(chunk_t *pc, int column)
                   cpd.settings[UO_indent_relative_single_line_comments].b) ?
                  ALMODE_KEEP_REL : ALMODE_KEEP_ABS;
       }
-      else if (pc->align.oc_msg_align)
-      {
-         /* keep relative positions for aligning OC_COLONs in OC_MSGs 
-            using the oc_msg_align field is more restrictive than using
-            pc->parent_type with CT_OC_MSG or CT_OC_BLOCK_EXPR as we really
-            just want to align selector colons and not string literals or
-            dictionary keys as is common for Cocoa code. */
-         almod = ALMODE_KEEP_REL;
-      }
-
+      
       if (almod == ALMODE_KEEP_ABS)
       {
          /* Keep same absolute column */
@@ -203,7 +191,7 @@ void align_to_column(chunk_t *pc, int column)
          }
          pc->column = prev->column + orig_delta;
       }
-      else /* ALMODE_SHIFT */
+      else /* ALMODE_SHIFT || ALMODE_OC_MSG */
       {
          /* Shift by the same amount */
          pc->column += col_delta;
@@ -428,7 +416,8 @@ void indent_text(void)
       
       if (pc->parent_type == CT_OC_BLOCK_EXPR) 
       {
-         /* quick fix for avoiding excessive indentation of already indented lines in ObjC block expressions */
+         /* quick fix for avoiding excessive indentation of 
+            already indented lines in ObjC block expressions */
          return;
       }
       
