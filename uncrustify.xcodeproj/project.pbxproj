@@ -931,6 +931,9 @@
 		65536921107EC62D00E08A01 /* Xcode Organizer Actions.xccommands */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "Xcode Organizer Actions.xccommands"; sourceTree = "<group>"; };
 		656E28301082F349007F873A /* selector.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = selector.m; sourceTree = "<group>"; };
 		6577BFCC10A3ECEC00654E5E /* 30253-align_left_shift.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "30253-align_left_shift.cpp"; sourceTree = "<group>"; };
+		6577C0C210A3F65300654E5E /* colon_align.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = colon_align.m; sourceTree = "<group>"; };
+		6577C0DE10A402F100654E5E /* oc-colon_align.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "oc-colon_align.cfg"; sourceTree = "<group>"; };
+		6577C0E510A4039C00654E5E /* 50090-colon_align.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "50090-colon_align.m"; sourceTree = "<group>"; };
 		659F8D37108A9A380004E4CB /* complex_method.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = complex_method.m; sourceTree = "<group>"; };
 		659F8DA6108AD5AC0004E4CB /* 50040-complex_method.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "50040-complex_method.m"; sourceTree = "<group>"; };
 		659F8DD8108ADCB30004E4CB /* objc_complex_method.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = objc_complex_method.cfg; sourceTree = "<group>"; };
@@ -1251,6 +1254,7 @@
 				65536358107EB6D900E08A01 /* nl_try-a.cfg */,
 				65536359107EB6D900E08A01 /* obj-c.cfg */,
 				659F8DD8108ADCB30004E4CB /* objc_complex_method.cfg */,
+				6577C0DE10A402F100654E5E /* oc-colon_align.cfg */,
 				654C6DB3108F62E900556CD9 /* oc-split.cfg */,
 				6553635A107EB6D900E08A01 /* op-space-force.cfg */,
 				6553635B107EB6D900E08A01 /* op-space-remove.cfg */,
@@ -1582,6 +1586,7 @@
 			children = (
 				65536469107EB6D900E08A01 /* Declarations.h */,
 				6553646A107EB6D900E08A01 /* exceptions.m */,
+				6577C0C210A3F65300654E5E /* colon_align.m */,
 				6553646B107EB6D900E08A01 /* Fraction.h */,
 				6553646C107EB6D900E08A01 /* Fraction.m */,
 				6553646D107EB6D900E08A01 /* main.m */,
@@ -2024,6 +2029,7 @@
 				65A4632D1092D346007F6EBA /* 50081-more_blocks.m */,
 				65A4632E1092D346007F6EBA /* 50082-more_blocks.m */,
 				65A4632F1092D346007F6EBA /* 50083-more_blocks.m */,
+				6577C0E510A4039C00654E5E /* 50090-colon_align.m */,
 			);
 			path = oc;
 			sourceTree = "<group>";

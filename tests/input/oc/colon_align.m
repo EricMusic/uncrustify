@@ -34,3 +34,10 @@
                         // next line should not be aligned at all because test cfg file has a span of 1 and this line has no oc colon
                     sel:@selector(blaMsg:)];
 }
+
+// test: the closing square bracket should not be re-aligned
+NSDictionary *info = [NSDictionary dictionaryWithObjectsAndKeys:
+                          [self fileURL].path, @"GIT_DIR",
+                          [[self fileURL].path stringByAppendingPathComponent:@"index"], @"GIT_INDEX_FILE",
+                          nil
+                     ];
