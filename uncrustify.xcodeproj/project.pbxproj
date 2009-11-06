@@ -87,10 +87,7 @@
 		655362A9107EB67900E08A01 /* configure.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = configure.in; sourceTree = "<group>"; };
 		655362AA107EB67900E08A01 /* Makefile.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Makefile.in; sourceTree = "<group>"; };
 		655362AB107EB67900E08A01 /* release-steps.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "release-steps.txt"; sourceTree = "<group>"; };
-		655362AC107EB67900E08A01 /* todo.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = todo.txt; sourceTree = "<group>"; };
 		655362AD107EB67900E08A01 /* autogen.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = autogen.sh; sourceTree = "<group>"; };
-		655362AE107EB67900E08A01 /* do-c.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = "do-c.sh"; sourceTree = "<group>"; };
-		655362AF107EB67900E08A01 /* do-d.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = "do-d.sh"; sourceTree = "<group>"; };
 		655362B0107EB67900E08A01 /* make_token_names.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = make_token_names.sh; sourceTree = "<group>"; };
 		655362B1107EB67900E08A01 /* run_tests.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = run_tests.sh; sourceTree = "<group>"; };
 		655362B2107EB67900E08A01 /* update-default-cfg.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = "update-default-cfg.sh"; sourceTree = "<group>"; };
@@ -933,6 +930,7 @@
 		65536846107EB7FA00E08A01 /* width.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = width.cpp; sourceTree = "<group>"; };
 		65536921107EC62D00E08A01 /* Xcode Organizer Actions.xccommands */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "Xcode Organizer Actions.xccommands"; sourceTree = "<group>"; };
 		656E28301082F349007F873A /* selector.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = selector.m; sourceTree = "<group>"; };
+		6577BFCC10A3ECEC00654E5E /* 30253-align_left_shift.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "30253-align_left_shift.cpp"; sourceTree = "<group>"; };
 		659F8D37108A9A380004E4CB /* complex_method.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = complex_method.m; sourceTree = "<group>"; };
 		659F8DA6108AD5AC0004E4CB /* 50040-complex_method.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "50040-complex_method.m"; sourceTree = "<group>"; };
 		659F8DD8108ADCB30004E4CB /* objc_complex_method.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = objc_complex_method.cfg; sourceTree = "<group>"; };
@@ -1041,10 +1039,7 @@
 				655362A9107EB67900E08A01 /* configure.in */,
 				655362AA107EB67900E08A01 /* Makefile.in */,
 				655362AB107EB67900E08A01 /* release-steps.txt */,
-				655362AC107EB67900E08A01 /* todo.txt */,
 				655362AD107EB67900E08A01 /* autogen.sh */,
-				655362AE107EB67900E08A01 /* do-c.sh */,
-				655362AF107EB67900E08A01 /* do-d.sh */,
 				655362B0107EB67900E08A01 /* make_token_names.sh */,
 				655362B1107EB67900E08A01 /* run_tests.sh */,
 				655362B2107EB67900E08A01 /* update-default-cfg.sh */,
@@ -1890,6 +1885,7 @@
 				65536564107EB6D900E08A01 /* 30205-cmt_right.cpp */,
 				65536565107EB6D900E08A01 /* 30250-align_fcall.cpp */,
 				65536566107EB6D900E08A01 /* 30251-align_fcall.cpp */,
+				6577BFCC10A3ECEC00654E5E /* 30253-align_left_shift.cpp */,
 				65536567107EB6D900E08A01 /* 30255-align_constr.cpp */,
 				65536568107EB6D900E08A01 /* 30260-var_def_gap.cpp */,
 				65536569107EB6D900E08A01 /* 30270-const_throw.cpp */,
