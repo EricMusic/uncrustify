@@ -870,8 +870,8 @@ void register_options(void)
                   "will automatically count as fail-out for doing any further alignment.", 0, 5000);
    
    unc_add_option("align_oc_msg_on_first_colon", UO_align_oc_msg_on_first_colon, AT_BOOL,
-                  "If a line in an ObjC msg send has multiple colons belonging to the same bracket level, \n"
-                  "align the first or the last of these colons with colons on consecutive lines.");
+                  "If a line in a multi-line ObjC msg send has multiple colons belonging to the same bracket level, \n"
+                  "align the first (True) or the last (False) of these colons with colons on consecutive lines.");
    
    unc_begin_group(UG_comment, "Comment modifications");
    unc_add_option("cmt_width", UO_cmt_width, AT_NUM,
