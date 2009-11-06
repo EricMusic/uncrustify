@@ -236,5 +236,4 @@ const char *token_names[] =
    "LAMBDA",
 };
 
-#endif  /* TOKEN_NAMES_H_INCLUDED */
-
+#endif /* TOKEN_NAMES_H_INCLUDED */
