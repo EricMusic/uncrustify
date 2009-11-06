@@ -27,6 +27,7 @@ static void align_oc_msg_spec(int span);
 static void align_typedefs(int span);
 static void align_left_shift(void);
 static void align_oc_msg_colon(int span);
+static void align_oc_msg_string(int span);
 static void add_oc_align_group(chunk_t *pc, AlignStack *st, int line_num, int start_col=0, int end_col=0, int ref_colon=0);
 
 /*
@@ -262,6 +263,11 @@ void align_all(void)
    if (cpd.settings[UO_align_oc_msg_colon_span].n > 0)
    {
       align_oc_msg_colon(cpd.settings[UO_align_oc_msg_colon_span].n);
+   }
+   
+   if (cpd.settings[UO_align_oc_msg_string_literal].b)
+   {
+      align_oc_msg_string(cpd.settings[UO_align_oc_msg_colon_span].n);
    }
    
    /* Align variable definitions */
@@ -1997,7 +2003,52 @@ static void add_oc_align_group(chunk_t *pc, AlignStack *st, int line_num, int st
 
 
 /**
- * Aligns OC message
+ * Aligns multi-line ObjC msg sends via their selector colons.
+ * It already handles a fair amount of edge cases but there is one caveat:
+ * Mixed spaces and tabs make it a very unreliable feature, so make sure
+ * that your document is clean either tabs or spaces.
+ *
+ * TODO: Nested message sends spanning multiple lines. 
+ *       For each level bump we need to shift the level's reference colon
+ *       over to the right for what is set as out_tab_size.
+ *
+ *       Currently, if we have this wrongly aligned msg send:
+ *       
+ *               [[NSAlert alertWithMessageText:messageText
+ *                         defaultButton:@"OK"
+ *                         alternateButton:@"Cancel"
+ *                         otherButton:nil
+ *                         informativeTextWithFormat:infoText] 
+ *                         beginSheetModalForWindow:[[historyController view] window] 
+ *                         modalDelegate:self 
+ *                         didEndSelector:nil 
+ *                         contextInfo:nil];
+ *
+ *       the algorithm will align all colons to the reference colon from the
+ *       first line, e.g. we get this:
+ *
+ *               [[NSAlert alertWithMessageText:messageText
+ *                                defaultButton:@"OK"
+ *                              alternateButton:@"Cancel"
+ *                                  otherButton:nil
+ *                    informativeTextWithFormat:infoText] 
+ *                     beginSheetModalForWindow:[[historyController view] window] 
+ *                                modalDelegate:self 
+ *                               didEndSelector:nil 
+ *                                  contextInfo:nil];
+ *
+ *        while we should get this instead (note the shift of the last few params):
+ *
+ *               [[NSAlert alertWithMessageText:messageText
+ *                                defaultButton:@"OK"
+ *                              alternateButton:@"Cancel"
+ *                                  otherButton:nil
+ *                    informativeTextWithFormat:infoText] 
+ *                         beginSheetModalForWindow:[[historyController view] window] 
+ *                                    modalDelegate:self 
+ *                                   didEndSelector:nil 
+ *                                      contextInfo:nil];    
+ * 
  */
 static void align_oc_msg_colon(int span)
 {
@@ -2025,14 +2076,12 @@ static void align_oc_msg_colon(int span)
    {
       if ((pc->type != CT_SQUARE_OPEN) || (pc->parent_type != CT_OC_MSG))
       {
-         pc = chunk_get_next(pc, CNAV_PREPROC);
+         pc = chunk_get_next(pc);
          continue;
       }
                
-      sas.Start(span);      
       cas.Start(span);
       
-      sas.m_oc_str_align = true;
       cas.m_oc_msg_align = true;
       
       level = pc->level;
@@ -2053,7 +2102,6 @@ static void align_oc_msg_colon(int span)
 
       bool has_multiple_colons = false;
       bool align_on_first      = (cpd.settings[UO_align_oc_msg_on_first_colon].b);
-      bool align_str_literals  = (cpd.settings[UO_align_oc_msg_string_literals].b);
       
       while (pc != NULL)
       {
@@ -2113,14 +2161,6 @@ static void align_oc_msg_colon(int span)
                   (next_line_has_oc_msg_colon(pc, level) ||
                    prev_line_has_oc_msg_colon(pc, level)))
          {
-            
-//             if (((ref_col == pc->column) ||      /* no need to align already aligned chunks */
-//                  (ref_col == pc->orig_col)))     /* or previously aligned chunks */
-//             {
-//                last_skipped_lnum = lnum;
-//                pc = chunk_get_next_type(pc, CT_OC_COLON, -1, CNAV_PREPROC);
-//                continue;
-//             }
 
             has_colon = true;
             
@@ -2158,8 +2198,17 @@ static void align_oc_msg_colon(int span)
                   pc = colon;
                }
             }
-            else if ((lcnt < span)/* && (lnum != last_skipped_lnum) */)
+            else if ((lcnt < span) && (lnum != last_skipped_lnum))
             {
+               
+               if (((ref_col == pc->column) ||      /* no need to align already aligned chunks */
+                    (ref_col == pc->orig_col)))     /* or previously aligned chunks */
+               {
+                  last_skipped_lnum = lnum;
+                  pc = chunk_get_next(pc, CNAV_PREPROC);
+                  continue;
+               }
+               
                if (align_on_first)
                {                  
                   /* figure out end col of last statement of line */
@@ -2255,16 +2304,177 @@ static void align_oc_msg_colon(int span)
                      add_oc_align_group(pc, &cas, lnum, line_start_col, line_end_col, colon_col);
                      
                   } // if (has_multiple_colons...)
+                  
                } // if (align_on_first)
+               
             } // if (first_line)
+            
          } // if (pc->parent_type == CT_COMMENT_WHOLE)
          
-         else if ((align_str_literals) && 
-                  (pc->type == CT_STRING) && 
-                  (pc->parent_type == CT_OC_MSG))
+//          if ((align_str_literals) && 
+//                   (pc->type == CT_STRING) && 
+//                   (pc->parent_type == CT_OC_MSG))
+//          {
+//             /* align consecutive string literals */
+//             
+//             int first_str_col = 0;
+//             int last_str_line = pc->orig_line;
+//             
+//             /* captures if we have seen the pattern ... :@"string" on a line before
+//                the contestant. if we don't bail out. this is because probably
+//                ... :@"string1"\n@"string2" ... should be treated differently than
+//                ... :\n@"string1"\n@"string2" ... Ideally this shouldn't matter at all
+//                and we should just be able to always align other strings to the first
+//                multi-line spaced string but that would have to be iterated on a per
+//                method call basis and how do you know that you are in a new method call?
+//                The levels won't help here. We would need to parse the whole document and
+//                make a cheap lookup table of each method call a bit like its used for 
+//                dynamic dispatch and that is just overkill for this. */
+//             bool prev_result  = false;    
+//                                         
+//             chunk_t * tmp2 = NULL;
+//             chunk_t * str  = pc;
+//             
+//             if (str != NULL)
+//             {
+//                if (((tmp2 = chunk_get_prev(str, CNAV_PREPROC)) != NULL) && (tmp2->type == CT_OC_COLON))
+//                {
+//                   prev_result = true;
+//                }
+//                
+//                if (first_str_col == 0)
+//                {
+//                   first_str_col = str->column;
+//                }
+//                
+//                while (((str = chunk_get_next_type(str, CT_STRING, str->level, CNAV_PREPROC)) != NULL) && prev_result)
+//                {                  
+//                   /* if we're on the next line and its prev is a newline,
+//                      e.g. CT_STRING is the only type on this line... */
+//                   if ((str->orig_line == (last_str_line + 1)) && 
+//                       (str->prev != NULL) && 
+//                       (str->prev->type == CT_NEWLINE))
+//                   {
+//                      last_str_line  = str->orig_line;
+//                      line_start_col = str->column;
+//                      
+//                      tmp2 = chunk_get_next_nl(pc, CNAV_PREPROC);
+//                      if (tmp2 != NULL)
+//                      {
+//                         line_end_col = tmp2->column;
+//                      }
+//                      
+//                      sas.Add(pc, 0, 0, line_start_col, line_end_col, first_str_col);
+//                      sas.Add(str, 0, 0, line_start_col, line_end_col, first_str_col);
+//                      
+//                      pc = str;
+//                   }
+//                   else
+//                   {
+//                      first_str_col = 0;
+//                      prev_result = false;
+//                   }
+//                }               
+//             }
+//          }
+          
+         pc = chunk_get_next(pc, CNAV_PREPROC);
+      }
+      
+      cas.End();
+   }
+}
+
+
+/**
+ * Works pretty much like align_oc_msg_colon() in that it gives 
+ * the file the once-over by aligning ObjC string literals 
+ * (@"...") used as parameters in ObjC msg sends.
+ * 
+ * e.g. if we have a msg send like:
+ * 
+ * [obj msgWithArg:arg
+ *             anotheArg:arg2
+ *           andFormat:@"some format string",
+ *                 @"content text",
+ *                  @"still more content text"];
+ *
+ * this would become:
+ *
+ * [obj msgWithArg:arg
+ *       anotheArg:arg2
+ *       andFormat:@"some format string",
+ *                 @"content text",
+ *                 @"still more content text"];
+ *
+ * If, however, we have a msg send that inserts a newline right 
+ * after the first colon it is likely that the following string 
+ * literal params have been aligned manually and should be left
+ * as is.
+ *
+ * e.g. don't modify
+ *
+ * [obj msgWithFormat:
+ *             @"some format string",
+ *             @"content text",
+ *             @"still more content text"];
+ *
+ * Note that following the order of execution in allign_all(), ObjC
+ * msg send colons are aligned first, then the string literal params.
+ * Also note that span is not really used here currently.
+ */
+static void align_oc_msg_string(int span)
+{
+   chunk_t    *pc = chunk_get_head();
+   chunk_t    *tmp;
+   chunk_t    *cstr;
+   
+   AlignStack sas;               /* string align stack */
+   
+   int        level;
+   int        lcnt;              /* line count with no colon for span. becomes fail-out condition if >= span */
+   int        lnum;              /* the line number of a multiline msg send */
+   int        line_start_col;    /* column of the start of a msg send line */
+   int        line_end_col;      /* column of the end of a msg send line */
+   int        last_skipped_lnum; /* line no of the last skipped line */
+   
+   while (pc != NULL)
+   {
+      if ((pc->type != CT_SQUARE_OPEN) || (pc->parent_type != CT_OC_MSG))
+      {
+         pc = chunk_get_next(pc);
+         continue;
+      }
+      
+      sas.Start(span);      
+      sas.m_oc_str_align = true;
+      
+      level = pc->level;
+      pc    = chunk_get_next_ncnl(pc, CNAV_PREPROC);
+      
+      lnum              = 1;  
+      lcnt              = 0;
+      line_end_col      = 0;  
+      line_start_col    = 0;
+      last_skipped_lnum = 0;
+      
+      
+      while (pc != NULL)
+      {
+         /* break on closing square */
+         if (pc->level == level)
+            break;            
+         
+         if (pc->parent_type == CT_COMMENT_WHOLE)
          {
-            /* align consecutive string literals */
-            
+            ++lcnt;
+            if (lcnt >= span)
+               break;
+         }
+
+         if ((pc->type == CT_STRING) && 
+             (pc->parent_type == CT_OC_MSG))
+         {            
             int first_str_col = 0;
             int last_str_line = pc->orig_line;
             
@@ -2278,58 +2488,57 @@ static void align_oc_msg_colon(int span)
                The levels won't help here. We would need to parse the whole document and
                make a cheap lookup table of each method call a bit like its used for 
                dynamic dispatch and that is just overkill for this. */
-            bool prev_result  = false;    
-                                        
-            chunk_t * tmp2 = NULL;
-            chunk_t * str  = pc;
+            bool has_colon_string_pattern = false;    
             
-            if (str != NULL)
+            tmp = NULL;
+            cstr  = pc;
+            
+            if (cstr != NULL)
             {
-               if (((tmp2 = chunk_get_prev(str, CNAV_PREPROC)) != NULL) && (tmp2->type == CT_OC_COLON))
+               if (((tmp = chunk_get_prev(cstr, CNAV_PREPROC)) != NULL) && (tmp->type == CT_OC_COLON))
                {
-                  prev_result = true;
+                  has_colon_string_pattern = true;
                }
                
                if (first_str_col == 0)
                {
-                  first_str_col = str->column;
+                  first_str_col = cstr->column;
                }
                
-               while (((str = chunk_get_next_type(str, CT_STRING, str->level, CNAV_PREPROC)) != NULL) && prev_result)
+               while (((cstr = chunk_get_next_type(cstr, CT_STRING, cstr->level, CNAV_PREPROC)) != NULL) && (has_colon_string_pattern))
                {                  
                   /* if we're on the next line and its prev is a newline,
-                     e.g. CT_STRING is the only type on this line... */
-                  if ((str->orig_line == (last_str_line + 1)) && 
-                      (str->prev != NULL) && 
-                      (str->prev->type == CT_NEWLINE))
+                   e.g. CT_STRING is the only type on this line... */
+                  if ((cstr->orig_line == (last_str_line + 1)) && 
+                      (cstr->prev != NULL) && 
+                      (cstr->prev->type == CT_NEWLINE))
                   {
-                     last_str_line  = str->orig_line;
-                     line_start_col = str->column;
+                     last_str_line  = cstr->orig_line;
+                     line_start_col = cstr->column;
                      
-                     tmp2 = chunk_get_next_nl(pc, CNAV_PREPROC);
-                     if (tmp2 != NULL)
+                     tmp = chunk_get_next_nl(pc, CNAV_PREPROC);
+                     if (tmp != NULL)
                      {
-                        line_end_col = tmp2->column;
+                        line_end_col = tmp->column;
                      }
                      
                      sas.Add(pc, 0, 0, line_start_col, line_end_col, first_str_col);
-                     sas.Add(str, 0, 0, line_start_col, line_end_col, first_str_col);
+                     sas.Add(cstr, 0, 0, line_start_col, line_end_col, first_str_col);
                      
-                     pc = str;
+                     pc = cstr;
                   }
                   else
                   {
                      first_str_col = 0;
-                     prev_result = false;
+                     has_colon_string_pattern = false;
                   }
                }               
             }
          }
-          
+         
          pc = chunk_get_next(pc, CNAV_PREPROC);
       }
       
-      cas.End();
       sas.End();
-   }
+   }   
 }

@@ -382,7 +382,7 @@ enum uncrustify_options
    UO_align_oc_msg_on_first_colon,  // if a line has multiple colons in a row, align the following lines 
                                     // belonging to the same msg send to the first or the last of these colons.
    
-   UO_align_oc_msg_string_literals, // align consecutive string literal paramaters in an ObjC msg send
+   UO_align_oc_msg_string_literal,  // align consecutive string literal paramaters in an ObjC msg send
 
 
    /*

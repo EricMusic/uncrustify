@@ -874,7 +874,7 @@ void register_options(void)
                   "Note that encountering the closing square bracket belonging to the same level\n"
                   "as the opening square will count as fail-out for doing any further alignment.", 0, 5000);
    
-   unc_add_option("align_oc_msg_string_literals", UO_align_oc_msg_string_literals, AT_BOOL,
+   unc_add_option("align_oc_msg_string_literal", UO_align_oc_msg_string_literal, AT_BOOL,
                   "Try to align consecutive string linteral parameters in an ObjC msg send.\n"
                   "For this to work make sure you don't have mixed tabs and spaces.\n"
                   "Note that encountering the closing square bracket belonging to the same level\n"
