@@ -47,3 +47,5 @@
 
 50090  oc-colon_align.cfg           oc/colon_align.m
 50091  oc-colon_align.cfg           oc/colon_and_string_literal_align.m
+50092  oc-misc_align_on_first.cfg   oc/misc.m
+50093  oc-misc_align_on_last.cfg    oc/misc.m

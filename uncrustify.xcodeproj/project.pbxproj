@@ -935,6 +935,10 @@
 		6577C0DE10A402F100654E5E /* oc-colon_align.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "oc-colon_align.cfg"; sourceTree = "<group>"; };
 		6577C0E510A4039C00654E5E /* 50090-colon_align.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "50090-colon_align.m"; sourceTree = "<group>"; };
 		6577C75310A4B86D00654E5E /* colon_and_string_literal_align.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 3; lastKnownFileType = sourcecode.c.objc; path = colon_and_string_literal_align.m; sourceTree = "<group>"; tabWidth = 3; usesTabs = 0; };
+		6577CA0C10A4DE9C00654E5E /* oc-misc_align_on_first.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "oc-misc_align_on_first.cfg"; sourceTree = "<group>"; };
+		6577CA0D10A4DE9C00654E5E /* oc-misc_align_on_last.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "oc-misc_align_on_last.cfg"; sourceTree = "<group>"; };
+		6577CA1310A4DEBC00654E5E /* 50092-misc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "50092-misc.m"; sourceTree = "<group>"; };
+		6577CA1410A4DEBC00654E5E /* 50093-misc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "50093-misc.m"; sourceTree = "<group>"; };
 		659F8D37108A9A380004E4CB /* complex_method.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = complex_method.m; sourceTree = "<group>"; };
 		659F8DA6108AD5AC0004E4CB /* 50040-complex_method.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "50040-complex_method.m"; sourceTree = "<group>"; };
 		659F8DD8108ADCB30004E4CB /* objc_complex_method.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = objc_complex_method.cfg; sourceTree = "<group>"; };
@@ -1256,6 +1260,8 @@
 				65536359107EB6D900E08A01 /* obj-c.cfg */,
 				659F8DD8108ADCB30004E4CB /* objc_complex_method.cfg */,
 				6577C0DE10A402F100654E5E /* oc-colon_align.cfg */,
+				6577CA0C10A4DE9C00654E5E /* oc-misc_align_on_first.cfg */,
+				6577CA0D10A4DE9C00654E5E /* oc-misc_align_on_last.cfg */,
 				654C6DB3108F62E900556CD9 /* oc-split.cfg */,
 				6553635A107EB6D900E08A01 /* op-space-force.cfg */,
 				6553635B107EB6D900E08A01 /* op-space-remove.cfg */,
@@ -2032,6 +2038,8 @@
 				65A4632E1092D346007F6EBA /* 50082-more_blocks.m */,
 				65A4632F1092D346007F6EBA /* 50083-more_blocks.m */,
 				6577C0E510A4039C00654E5E /* 50090-colon_align.m */,
+				6577CA1310A4DEBC00654E5E /* 50092-misc.m */,
+				6577CA1410A4DEBC00654E5E /* 50093-misc.m */,
 			);
 			path = oc;
 			sourceTree = "<group>";
