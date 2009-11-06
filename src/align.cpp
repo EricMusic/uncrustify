@@ -2025,7 +2025,7 @@ static void align_oc_msg_colon(int span)
    {
       if ((pc->type != CT_SQUARE_OPEN) || (pc->parent_type != CT_OC_MSG))
       {
-         pc = chunk_get_next(pc);
+         pc = chunk_get_next(pc, CNAV_PREPROC);
          continue;
       }
                
@@ -2114,14 +2114,14 @@ static void align_oc_msg_colon(int span)
                    prev_line_has_oc_msg_colon(pc, level)))
          {
             
-            if (((ref_col == pc->column) ||      /* no need to align already aligned chunks */
-                 (ref_col == pc->orig_col)))     /* or previously aligned chunks */
-            {
-               last_skipped_lnum = lnum;
-               pc = chunk_get_next(pc, CNAV_PREPROC);
-               continue;
-            }
-            
+//             if (((ref_col == pc->column) ||      /* no need to align already aligned chunks */
+//                  (ref_col == pc->orig_col)))     /* or previously aligned chunks */
+//             {
+//                last_skipped_lnum = lnum;
+//                pc = chunk_get_next_type(pc, CT_OC_COLON, -1, CNAV_PREPROC);
+//                continue;
+//             }
+
             has_colon = true;
             
             /* on the first line we just need to find out the colon for alignment */
@@ -2158,7 +2158,7 @@ static void align_oc_msg_colon(int span)
                   pc = colon;
                }
             }
-            else if ((lcnt < span) && (lnum != last_skipped_lnum))
+            else if ((lcnt < span)/* && (lnum != last_skipped_lnum) */)
             {
                if (align_on_first)
                {                  
