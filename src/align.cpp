@@ -27,9 +27,6 @@ static void align_oc_msg_spec(int span);
 static void align_typedefs(int span);
 static void align_left_shift(void);
 static void align_oc_msg_colon(int span);
-static bool line_has_oc_msg_colon(chunk_t *pc, bool *prev_result, int level);
-static bool next_line_has_oc_msg_colon(chunk_t *pc, int level);
-static bool prev_line_has_oc_msg_colon(chunk_t *pc, int level);
 static void add_oc_align_group(chunk_t *pc, AlignStack *st, int line_num, int start_col=0, int end_col=0, int ref_colon=0);
 
 /*
@@ -1778,10 +1775,10 @@ static void align_left_shift(void)
  *                      line OC_MSG return true even though there is no following 
  *                      line with a OC_COLON.
  *
- * @param level         the (cached) level of the opening square bracket
+ * @param level         the level of the opening square bracket
  *
  */
-static bool line_has_oc_msg_colon(chunk_t *pc, int level)
+bool line_has_oc_msg_colon(chunk_t *pc, int level)
 {
    chunk_t * tmp = pc;
    bool result = false;
@@ -1835,7 +1832,7 @@ static bool line_has_oc_msg_colon(chunk_t *pc, int level)
    return result;
 }
 
-static bool next_line_has_oc_msg_colon(chunk_t *pc, int level)
+bool next_line_has_oc_msg_colon(chunk_t *pc, int level)
 {
    chunk_t * tmp = pc;
    
@@ -1869,7 +1866,7 @@ static bool next_line_has_oc_msg_colon(chunk_t *pc, int level)
    return line_has_oc_msg_colon(tmp, level);
 }
 
-static bool prev_line_has_oc_msg_colon(chunk_t *pc, int level)
+bool prev_line_has_oc_msg_colon(chunk_t *pc, int level)
 {
    chunk_t * tmp = pc;
    

@@ -500,6 +500,11 @@ void register_options(void)
    unc_add_option("indent_align_assign", UO_indent_align_assign, AT_BOOL,
                   "Align continued statements at the '='. Default=True\n"
                   "If FALSE or the '=' is followed by a newline, the next line is indent one tab.");
+   
+   unc_add_option("indent_preserve_in_oc_msg_send", UO_indent_preserve_in_oc_msg_send, AT_BOOL,
+                  "Preserve indentation in oc msg sends and oc blocks. This makes it possible to avoid destroying\n"
+                  "manually aligned msg sends like a stringWithFormat call with multiple aligned string literals.\n"
+                  "Note: Colon alignment in ObjC msg sends is not modified by this setting. (see align_oc_msg_colon_span)\n");
 
    unc_begin_group(UG_newline, "Newline adding and removing options");
    unc_add_option("nl_collapse_empty_body", UO_nl_collapse_empty_body, AT_BOOL,

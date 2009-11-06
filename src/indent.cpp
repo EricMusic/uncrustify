@@ -408,17 +408,23 @@ void indent_text(void)
       /* Handle proprocessor transitions */
       was_preproc = in_preproc;
       in_preproc  = (pc->flags & PCF_IN_PREPROC) != 0;
+      
+      if ((pc->parent_type == CT_OC_MSG) && 
+          (cpd.settings[UO_indent_preserve_in_oc_msg_send].b)) 
+      {
+         /* Quick fix for avoiding excessive indentation of already
+            indented lines in ObjC msg sends unless this is a multiline 
+            msg send suitable for colon alignment */
+         if (!(next_line_has_oc_msg_colon(pc, -1)) &&
+             !(prev_line_has_oc_msg_colon(pc, -1)))
+         {
+            pc->flags |= PCF_DONT_INDENT;
+         }
+      }
 
       if (cpd.settings[UO_indent_brace_parent].b)
       {
          parent_token_indent = token_indent(pc->parent_type);
-      }
-      
-      if (pc->parent_type == CT_OC_BLOCK_EXPR) 
-      {
-         /* quick fix for avoiding excessive indentation of 
-            already indented lines in ObjC block expressions */
-         return;
       }
       
       /* Clean up after a #define, etc */
@@ -739,10 +745,41 @@ void indent_text(void)
          /* Always indent on virtual braces */
          indent_column_set(frm.pse[frm.pse_tos].indent_tmp);
       }
-      else if ((pc->type == CT_BRACE_OPEN))
+      else if (pc->type == CT_BRACE_OPEN)
       {
-         frm.level++;
-         indent_pse_push(frm, pc);
+         if (pc->parent_type == CT_OC_BLOCK_EXPR)
+         {
+            /* figure out if we have an inline block inside a msg send, e.g.:
+             
+               [obj msgNameWithArg:bla1 anotherArg2:bla2 aBlock: ^(int param) {
+                   param += 1;
+                   return param;
+               }];
+             
+               and don't add it to the stack if we do as it seems to do more harm
+               than good. Other block expressions appear to do OK. */
+            
+            c_token_t pt = (c_token_t)-1;
+            chunk_t * oc = chunk_get_prev_type(pc, CT_OC_BLOCK_CARET, pc->level, CNAV_PREPROC);
+            if (oc != NULL) 
+            {
+               oc = chunk_get_prev(oc, CNAV_PREPROC);
+               if (oc != NULL)
+               {
+                  pt = oc->parent_type;
+               }
+            }
+            
+            if (pt != CT_OC_MSG)
+            {
+               frm.level++;
+               indent_pse_push(frm, pc);
+            }
+         } 
+         else {
+            frm.level++;
+            indent_pse_push(frm, pc);
+         }
 
          if (frm.paren_count != 0)
          {

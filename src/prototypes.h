@@ -99,6 +99,9 @@ chunk_t *align_assign(chunk_t *first, int span, int thresh);
 void quick_align_again(void);
 int oc_msg_colons_for_line(chunk_t *pc, int level, bool skip);
 
+bool line_has_oc_msg_colon(chunk_t *pc, bool *prev_result, int level);
+bool next_line_has_oc_msg_colon(chunk_t *pc, int level = -1);
+bool prev_line_has_oc_msg_colon(chunk_t *pc, int level = -1);
 
 /*
  *  braces.cpp

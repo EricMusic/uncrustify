@@ -154,7 +154,12 @@ enum uncrustify_options
    UO_indent_align_assign,
 
    UO_indent_else_if,
-   UO_indent_var_def_blk,        // indent a variable def block that appears at the top
+   UO_indent_var_def_blk,                   // indent a variable def block that appears at the top
+    
+   UO_indent_preserve_in_oc_msg_send,       // avoid indentation of text in oc msg sends and oc blocks. 
+                                            // colons in oc msg sends will still be aligned according to
+                                            // their own settings in UO_align (see UO_align_oc_msg_colon_span).
+
 
    /*
     * Misc inter-element spacing
