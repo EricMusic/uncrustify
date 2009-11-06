@@ -502,7 +502,10 @@ void register_options(void)
                   "If FALSE or the '=' is followed by a newline, the next line is indent one tab.");
    
    unc_add_option("indent_preserve_in_oc_msg_send", UO_indent_preserve_in_oc_msg_send, AT_BOOL,
-                  "Try to pereserve manual text indentation in oc msg sends.\n"
+                  "Try to pereserve manual text indentation in oc msg sends (not recommended).\n"
+                  "This feature is a bit unstable in that it will work in extreme cases but more often\n"
+                  "than not the same can't be said for simple day-to-day cases. If you want string literals kept\n"
+                  "aligned see align_oc_msg_string_literal which supersedes this option in that regard.\n"
                   "Colon alignment in msg sends is not modified by this setting. (see align_oc_msg_colon_span)\n");
 
    unc_begin_group(UG_newline, "Newline adding and removing options");
