@@ -235,6 +235,10 @@ void AlignStack::Add(chunk_t *start, int seqnum, int oc_line, int oc_line_start,
          col_adj = start->column - ali->column;
          gap     = start->column - (ref->column + ref->len);
       }
+      if ((tmp->type == CT_STRING) && (tmp->parent_type == CT_OC_MSG))
+      {
+         align_to_column(tmp, oc_ref_colon);
+      }
 
       /* See if this pushes out the max_col */
       endcol = ali->column + col_adj;
@@ -432,23 +436,13 @@ void AlignStack::Flush()
             oc_ref_colon = pcs->align.oc_ref_colon;
             oc_msg_delta = (oc_msg_fix_pt - oc_ref_colon) + 1;
             
-//             if ((oc_msg_has_mult_colons) || 
-//                 (oc_msg_colons_for_line(pc, pc->level, true) > 1))
-//             {
-//                oc_msg_has_mult_colons = true;
-//                
-//                col_adj = oc_msg_delta + (oc_msg_start - oc_msg_ref_start);
-//                pc->align.col_adj = col_adj;
-//             }
-//             else 
-//             {
-//                col_adj = oc_msg_delta + (oc_msg_start - oc_msg_ref_start);
-//                pc->align.col_adj = col_adj;               
-//             }
-            
             col_adj = oc_msg_delta + (oc_msg_start - oc_msg_ref_start);
             pc->align.col_adj = col_adj; 
          }
+      }
+      else if (m_oc_str_align)
+      {
+         col_adj = pc->align.oc_ref_colon;
       }
       
       /* See if this pushes out the max_col */
@@ -505,8 +499,6 @@ void AlignStack::Flush()
       else {
          align_to_column(pc, tmp_col);
       }
-
-         
    }
 
    if (ce != NULL)

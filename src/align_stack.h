@@ -32,6 +32,7 @@ public:
                                     /* This is somewhat of a hack since its currently only needed to properly */ 
                                     /* align OC_COLONS in OC_MSGs while leaving user-aligned, spaced-over-multiple-lines */
                                     /* OC_MSG calls. Alignment by hand is quite commong for longer OC_MSGs */
+   bool       m_oc_str_align;       /* align string literals in ObjC msg sends */
    int        m_oc_msg_lines;       /* max lines of a multiline msg send */
    StarStyle  m_star_style;
    StarStyle  m_amp_style;
@@ -40,7 +41,7 @@ public:
    AlignStack() :
       m_max_col(0), m_min_col(0), m_span(0), m_thresh(0), m_seqnum(0),
       m_nl_seqnum(0), m_gap(0), m_right_align(false), m_oc_msg_align(false), 
-      m_oc_msg_lines(0),
+      m_oc_str_align(false), m_oc_msg_lines(0),
       m_star_style(SS_IGNORE), m_amp_style(SS_IGNORE),
       m_last_added(0)
    {

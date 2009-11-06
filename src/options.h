@@ -377,8 +377,12 @@ enum uncrustify_options
    UO_align_typedef_amp_style,     // align_typedef_star_style for ref '&' stuff
    //UO_align_struct_array_brace,  // TODO: align array of structure initializers
    UO_align_left_shift,
-   UO_align_oc_msg_colon_span,
-   UO_align_oc_msg_on_first_colon, // if a line has multiple selector colons, align consecutive lines to the first of these colons or to the last
+   
+   UO_align_oc_msg_colon_span,      // the span for aligning ObjC msg sends on colons
+   UO_align_oc_msg_on_first_colon,  // if a line has multiple colons in a row, align the following lines 
+                                    // belonging to the same msg send to the first or the last of these colons.
+   
+   UO_align_oc_msg_string_literals, // align consecutive string literal paramaters in an ObjC msg send
 
 
    /*

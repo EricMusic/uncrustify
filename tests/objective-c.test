@@ -46,3 +46,4 @@
 50083  sp_before_after_oc_block_caret_remove.cfg    oc/more_blocks.m
 
 50090  oc-colon_align.cfg           oc/colon_align.m
+50091  oc-colon_align.cfg           oc/colon_and_string_literal_align.m

@@ -502,9 +502,8 @@ void register_options(void)
                   "If FALSE or the '=' is followed by a newline, the next line is indent one tab.");
    
    unc_add_option("indent_preserve_in_oc_msg_send", UO_indent_preserve_in_oc_msg_send, AT_BOOL,
-                  "Preserve indentation in oc msg sends and oc blocks. This makes it possible to avoid destroying\n"
-                  "manually aligned msg sends like a stringWithFormat call with multiple aligned string literals.\n"
-                  "Note: Colon alignment in ObjC msg sends is not modified by this setting. (see align_oc_msg_colon_span)\n");
+                  "Try to pereserve manual text indentation in oc msg sends.\n"
+                  "Colon alignment in msg sends is not modified by this setting. (see align_oc_msg_colon_span)\n");
 
    unc_begin_group(UG_newline, "Newline adding and removing options");
    unc_add_option("nl_collapse_empty_body", UO_nl_collapse_empty_body, AT_BOOL,
@@ -871,8 +870,15 @@ void register_options(void)
    
    unc_add_option("align_oc_msg_colon_span", UO_align_oc_msg_colon_span, AT_NUM,
                   "Span for aligning parameters in an ObjC message call on the ':' (0=don't align)\n"
-                  "Note that the closing square belonging to the same bracket level as the opening square\n"
-                  "will automatically count as fail-out for doing any further alignment.", 0, 5000);
+                  "For this to work make sure you don't have mixed tabs and spaces.\n"
+                  "Note that encountering the closing square bracket belonging to the same level\n"
+                  "as the opening square will count as fail-out for doing any further alignment.", 0, 5000);
+   
+   unc_add_option("align_oc_msg_string_literals", UO_align_oc_msg_string_literals, AT_BOOL,
+                  "Try to align consecutive string linteral parameters in an ObjC msg send.\n"
+                  "For this to work make sure you don't have mixed tabs and spaces.\n"
+                  "Note that encountering the closing square bracket belonging to the same level\n"
+                  "as the opening square will count as fail-out for doing any further alignment.");
    
    unc_add_option("align_oc_msg_on_first_colon", UO_align_oc_msg_on_first_colon, AT_BOOL,
                   "If a line in a multi-line ObjC msg send has multiple colons belonging to the same bracket level, \n"

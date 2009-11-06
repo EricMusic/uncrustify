@@ -1832,6 +1832,7 @@ bool line_has_oc_msg_colon(chunk_t *pc, int level)
    return result;
 }
 
+
 bool next_line_has_oc_msg_colon(chunk_t *pc, int level)
 {
    chunk_t * tmp = pc;
@@ -1865,6 +1866,7 @@ bool next_line_has_oc_msg_colon(chunk_t *pc, int level)
    
    return line_has_oc_msg_colon(tmp, level);
 }
+
 
 bool prev_line_has_oc_msg_colon(chunk_t *pc, int level)
 {
@@ -2006,6 +2008,7 @@ static void align_oc_msg_colon(int span)
                                     or types. */
    
    AlignStack cas;               /* colon align stack */
+   AlignStack sas;               /* string align stack */
    
    int        level;
    int        lcnt;              /* line count with no colon for span. becomes fail-out condition if >= span */
@@ -2026,7 +2029,10 @@ static void align_oc_msg_colon(int span)
          continue;
       }
                
+      sas.Start(span);      
       cas.Start(span);
+      
+      sas.m_oc_str_align = true;
       cas.m_oc_msg_align = true;
       
       level = pc->level;
@@ -2047,12 +2053,13 @@ static void align_oc_msg_colon(int span)
 
       bool has_multiple_colons = false;
       bool align_on_first      = (cpd.settings[UO_align_oc_msg_on_first_colon].b);
+      bool align_str_literals  = (cpd.settings[UO_align_oc_msg_string_literals].b);
       
       while (pc != NULL)
       {
          /* break on closing square */
          if (pc->level == level)
-            break;
+            break;            
          
          if (pc->parent_type == CT_COMMENT_WHOLE)
          {
@@ -2103,7 +2110,6 @@ static void align_oc_msg_colon(int span)
             }
          }
          else if (pc->type == CT_OC_COLON && 
-                  pc->level == level + 1 &&
                   (next_line_has_oc_msg_colon(pc, level) ||
                    prev_line_has_oc_msg_colon(pc, level)))
          {
@@ -2249,18 +2255,81 @@ static void align_oc_msg_colon(int span)
                      add_oc_align_group(pc, &cas, lnum, line_start_col, line_end_col, colon_col);
                      
                   } // if (has_multiple_colons...)
+               } // if (align_on_first)
+            } // if (first_line)
+         } // if (pc->parent_type == CT_COMMENT_WHOLE)
+         
+         else if ((align_str_literals) && 
+                  (pc->type == CT_STRING) && 
+                  (pc->parent_type == CT_OC_MSG))
+         {
+            /* align consecutive string literals */
+            
+            int first_str_col = 0;
+            int last_str_line = pc->orig_line;
+            
+            /* captures if we have seen the pattern ... :@"string" on a line before
+               the contestant. if we don't bail out. this is because probably
+               ... :@"string1"\n@"string2" ... should be treated differently than
+               ... :\n@"string1"\n@"string2" ... Ideally this shouldn't matter at all
+               and we should just be able to always align other strings to the first
+               multi-line spaced string but that would have to be iterated on a per
+               method call basis and how do you know that you are in a new method call?
+               The levels won't help here. We would need to parse the whole document and
+               make a cheap lookup table of each method call a bit like its used for 
+               dynamic dispatch and that is just overkill for this. */
+            bool prev_result  = false;    
+                                        
+            chunk_t * tmp2 = NULL;
+            chunk_t * str  = pc;
+            
+            if (str != NULL)
+            {
+               if (((tmp2 = chunk_get_prev(str, CNAV_PREPROC)) != NULL) && (tmp2->type == CT_OC_COLON))
+               {
+                  prev_result = true;
                }
                
-            } // if (first_line)
+               if (first_str_col == 0)
+               {
+                  first_str_col = str->column;
+               }
+               
+               while (((str = chunk_get_next_type(str, CT_STRING, str->level, CNAV_PREPROC)) != NULL) && prev_result)
+               {                  
+                  /* if we're on the next line and its prev is a newline,
+                     e.g. CT_STRING is the only type on this line... */
+                  if ((str->orig_line == (last_str_line + 1)) && 
+                      (str->prev != NULL) && 
+                      (str->prev->type == CT_NEWLINE))
+                  {
+                     last_str_line  = str->orig_line;
+                     line_start_col = str->column;
+                     
+                     tmp2 = chunk_get_next_nl(pc, CNAV_PREPROC);
+                     if (tmp2 != NULL)
+                     {
+                        line_end_col = tmp2->column;
+                     }
+                     
+                     sas.Add(pc, 0, 0, line_start_col, line_end_col, first_str_col);
+                     sas.Add(str, 0, 0, line_start_col, line_end_col, first_str_col);
+                     
+                     pc = str;
+                  }
+                  else
+                  {
+                     first_str_col = 0;
+                     prev_result = false;
+                  }
+               }               
+            }
          }
-         
+          
          pc = chunk_get_next(pc, CNAV_PREPROC);
-         
-         /* ignore nested msg sends */
-         if (pc->level != level + 1)
-            continue;
       }
       
       cas.End();
+      sas.End();
    }
 }

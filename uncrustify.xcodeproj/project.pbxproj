@@ -934,6 +934,7 @@
 		6577C0C210A3F65300654E5E /* colon_align.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = colon_align.m; sourceTree = "<group>"; };
 		6577C0DE10A402F100654E5E /* oc-colon_align.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "oc-colon_align.cfg"; sourceTree = "<group>"; };
 		6577C0E510A4039C00654E5E /* 50090-colon_align.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "50090-colon_align.m"; sourceTree = "<group>"; };
+		6577C75310A4B86D00654E5E /* colon_and_string_literal_align.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 3; lastKnownFileType = sourcecode.c.objc; path = colon_and_string_literal_align.m; sourceTree = "<group>"; tabWidth = 3; usesTabs = 0; };
 		659F8D37108A9A380004E4CB /* complex_method.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = complex_method.m; sourceTree = "<group>"; };
 		659F8DA6108AD5AC0004E4CB /* 50040-complex_method.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "50040-complex_method.m"; sourceTree = "<group>"; };
 		659F8DD8108ADCB30004E4CB /* objc_complex_method.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = objc_complex_method.cfg; sourceTree = "<group>"; };
@@ -1587,6 +1588,7 @@
 				65536469107EB6D900E08A01 /* Declarations.h */,
 				6553646A107EB6D900E08A01 /* exceptions.m */,
 				6577C0C210A3F65300654E5E /* colon_align.m */,
+				6577C75310A4B86D00654E5E /* colon_and_string_literal_align.m */,
 				6553646B107EB6D900E08A01 /* Fraction.h */,
 				6553646C107EB6D900E08A01 /* Fraction.m */,
 				6553646D107EB6D900E08A01 /* main.m */,
@@ -2089,7 +2091,7 @@
 		6553680E107EB7FA00E08A01 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				6553682D107EB7FA00E08A01 /* Makefile.am */,
+				6577C7FC10A4BE0100654E5E /* make */,
 				6553680F107EB7FA00E08A01 /* align.cpp */,
 				65536810107EB7FA00E08A01 /* align_stack.cpp */,
 				65536812107EB7FA00E08A01 /* args.cpp */,
@@ -2143,8 +2145,6 @@
 				65536841107EB7FA00E08A01 /* unc_ctype.h */,
 				65536843107EB7FA00E08A01 /* uncrustify_types.h */,
 				65536844107EB7FA00E08A01 /* uncrustify_version.h */,
-				65536820107EB7FA00E08A01 /* config.h.in */,
-				6553682E107EB7FA00E08A01 /* Makefile.in */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -2155,6 +2155,16 @@
 				65536921107EC62D00E08A01 /* Xcode Organizer Actions.xccommands */,
 			);
 			path = osx;
+			sourceTree = "<group>";
+		};
+		6577C7FC10A4BE0100654E5E /* make */ = {
+			isa = PBXGroup;
+			children = (
+				6553682D107EB7FA00E08A01 /* Makefile.am */,
+				65536820107EB7FA00E08A01 /* config.h.in */,
+				6553682E107EB7FA00E08A01 /* Makefile.in */,
+			);
+			name = make;
 			sourceTree = "<group>";
 		};
 		65B887E71082CBDE00D10769 /* theory */ = {
