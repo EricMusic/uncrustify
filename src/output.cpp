@@ -262,6 +262,16 @@ void output_options(FILE *pfile)
    }
 }
 
+#ifdef stdout
+/**
+ * Dumps the processed chunks to stdout.
+ * Can be used to look at intermediate state between execution start and end.
+ */
+void dump_text()
+{
+   output_text(stdout);
+}
+#endif
 
 /**
  * This renders the chunk list to a file.
@@ -555,6 +565,7 @@ static chunk_t *get_next_function(chunk_t *pc)
    {
       if ((pc->type == CT_FUNC_DEF) ||
           (pc->type == CT_OC_MSG_DECL) ||
+          (pc->type == CT_OC_MSG_SPEC) ||
           (pc->type == CT_FUNC_PROTO))
       {
          return(pc);

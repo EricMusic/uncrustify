@@ -32,6 +32,7 @@ void AlignStack::Start(int span, int thresh)
    m_gap          = 0;
    m_right_align  = false;
    m_oc_msg_align = false;
+   m_oc_str_align = false;
    m_oc_msg_lines = 0;
    m_star_style   = SS_IGNORE;
    m_amp_style    = SS_IGNORE;
@@ -235,10 +236,6 @@ void AlignStack::Add(chunk_t *start, int seqnum, int oc_line, int oc_line_start,
          col_adj = start->column - ali->column;
          gap     = start->column - (ref->column + ref->len);
       }
-      if ((tmp->type == CT_STRING) && (tmp->parent_type == CT_OC_MSG))
-      {
-         align_to_column(tmp, oc_ref_colon);
-      }
 
       /* See if this pushes out the max_col */
       endcol = ali->column + col_adj;
@@ -258,16 +255,33 @@ void AlignStack::Add(chunk_t *start, int seqnum, int oc_line, int oc_line_start,
       ali->align.col_adj           = col_adj;
       ali->align.ref               = ref;
       ali->align.start             = start;
+      ali->align.oc_msg_align      = m_oc_msg_align;
+      ali->align.oc_str_align      = m_oc_str_align;
+      ali->align.oc_msg_lines      = m_oc_msg_lines;
       ali->align.oc_msg_line       = oc_line;
       ali->align.oc_msg_line_start = oc_line_start;
       ali->align.oc_msg_line_end   = oc_line_end;
       ali->align.oc_ref_colon      = oc_ref_colon;
+      
       m_aligned.Push(ali, seqnum);
       m_last_added = 1;
 
-      LOG_FMT(LAS, "Add-[%.*s]: line %d, col %d, adj %d : ref=[%.*s] endcol=%d\n",
-              ali->len, ali->str, ali->orig_line, ali->column, ali->align.col_adj,
-              ref->len, ref->str, endcol);
+      if (m_oc_msg_align || m_oc_str_align)
+      {
+         LOG_FMT(LAS, "Add-[%.*s]: line %d, col %d, adj %d : ref = [%.*s] endcol = %d\n"
+                 "m_oc_msg_align = %s, m_oc_str_align = %s, m_oc_msg_lines = %d\n"
+                 "oc_msg_line = %d, oc_msg_line_start = %d, oc_msg_line_end = %d, oc_msg_ref_colon = %d\n",
+                 ali->len, ali->str, ali->orig_line, ali->column, ali->align.col_adj,
+                 ref->len, ref->str, endcol, 
+                 (m_oc_msg_align ? "true" : "false"), (m_oc_str_align ? "true" : "false"), m_oc_msg_lines,
+                 oc_line, oc_line_start, oc_line_end, oc_ref_colon);
+      }
+      else 
+      {
+         LOG_FMT(LAS, "Add-[%.*s]: line %d, col %d, adj %d : ref=[%.*s] endcol=%d\n",
+                 ali->len, ali->str, ali->orig_line, ali->column, ali->align.col_adj,
+                 ref->len, ref->str, endcol);
+      }
 
       if (m_min_col > endcol)
       {
@@ -405,7 +419,7 @@ void AlignStack::Flush()
          }
          col_adj += start_len;
          pc->align.col_adj = col_adj;
-      } 
+      }
       
       oc_line = pc->align.oc_msg_line;
       
@@ -421,11 +435,11 @@ void AlignStack::Flush()
          {
             oc_msg_delta      = 0;
             oc_msg_fix_pt     = pc->align.oc_ref_colon;
-            oc_ref_colon      = pcs->align.oc_ref_colon;
+            oc_ref_colon      = pc->align.oc_ref_colon;
             oc_msg_ref_start  = oc_msg_start;
             oc_msg_ref_end    = oc_msg_end;
             
-            col_adj = oc_msg_delta;
+            col_adj           = oc_msg_delta;
             pc->align.col_adj = col_adj;        
          }
          else
@@ -442,7 +456,22 @@ void AlignStack::Flush()
       }
       else if (m_oc_str_align)
       {
-         col_adj = pc->align.oc_ref_colon;
+         if (idx == 0)
+         {
+            oc_msg_delta      = 0;
+            oc_msg_fix_pt     = pc->align.oc_ref_colon;
+            oc_ref_colon      = pc->align.oc_ref_colon;
+            oc_msg_ref_start  = oc_msg_start;
+            oc_msg_ref_end    = oc_msg_end;
+         }
+         else 
+         {
+            oc_ref_colon = pc->align.oc_ref_colon;
+            oc_msg_delta = oc_msg_fix_pt;
+         }
+         
+         col_adj = oc_msg_fix_pt;
+         pc->align.col_adj = col_adj; 
       }
       
       /* See if this pushes out the max_col */
@@ -473,30 +502,38 @@ void AlignStack::Flush()
          pc->align.star_style        = (int)m_star_style;
          pc->align.gap               = m_gap;
       }
+      
       pc->align.next = m_aligned.GetChunk(idx + 1);
 
       if (m_oc_msg_align)
       {
-         /* different version for OC_COLON alignment */
          tmp_col = pc->align.col_adj;
-         
-         pc->align.oc_msg_align = m_oc_msg_align;
-         pc->align.oc_msg_line  = oc_line;
+         pc->align.oc_msg_align  = m_oc_msg_align;
+      }
+      else if (m_oc_str_align)
+      {
+         tmp_col = pc->align.col_adj;
+         pc->align.oc_str_align  = m_oc_str_align;
       }
       else
       {
          /* Indent the token, taking col_adj into account */
          tmp_col = m_max_col - pc->align.col_adj;
       }
+      
       LOG_FMT(LAS, "%s: line %d: '%.*s' to col %d (adj=%d)\n", __func__,
               pc->orig_line, pc->len, pc->str, tmp_col, pc->align.col_adj);
    
       if (m_oc_msg_align)
       {
-         if (oc_line != 1)
-            align_to_column(pc, tmp_col, ALMODE_OC_MSG);
+         align_to_column(pc, tmp_col, ALMODE_OC_MSG); 
       }
-      else {
+      else if (m_oc_str_align)
+      {
+         align_to_column(pc, tmp_col); 
+      }
+      else 
+      {
          align_to_column(pc, tmp_col);
       }
    }

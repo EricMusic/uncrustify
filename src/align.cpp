@@ -225,20 +225,33 @@ void quick_align_again(void)
    LOG_FMT(LALAGAIN, "%s:\n", __func__);
    for (pc = chunk_get_head(); pc != NULL; pc = chunk_get_next(pc))
    {
-      if ((pc->align.next != NULL) && (pc->flags & PCF_ALIGN_START) && !pc->align.oc_msg_align)
+      if ((pc->align.next != NULL) && (pc->flags & PCF_ALIGN_START))
       {
          as.Start(100, 0);
          as.m_right_align  = pc->align.right_align;
+         as.m_oc_str_align = pc->align.oc_str_align;
          as.m_oc_msg_align = pc->align.oc_msg_align;
+         as.m_oc_msg_lines = pc->align.oc_msg_lines;
          as.m_star_style   = (AlignStack::StarStyle)pc->align.star_style;
          as.m_amp_style    = (AlignStack::StarStyle)pc->align.amp_style;
          as.m_gap          = pc->align.gap;
 
          LOG_FMT(LALAGAIN, "   [%.*s:%d]", pc->len, pc->str, pc->orig_line);
-         as.Add(pc->align.start);
+         
+         as.Add(pc->align.start, 0, 
+                pc->align.oc_msg_line, 
+                pc->align.oc_msg_line_start, 
+                pc->align.oc_msg_line_end, 
+                pc->align.oc_ref_colon);
+         
          for (tmp = pc->align.next; tmp != NULL; tmp = tmp->align.next)
          {
-            as.Add(tmp->align.start);
+            as.Add(tmp->align.start, 0, 
+                   tmp->align.oc_msg_line, 
+                   tmp->align.oc_msg_line_start, 
+                   tmp->align.oc_msg_line_end, 
+                   tmp->align.oc_ref_colon);
+            
             LOG_FMT(LALAGAIN, " => [%.*s:%d]", tmp->len, tmp->str, tmp->orig_line);
          }
          LOG_FMT(LALAGAIN, "\n");
@@ -260,16 +273,6 @@ void align_all(void)
       align_left_shift();
    }
 
-   if (cpd.settings[UO_align_oc_msg_colon_span].n > 0)
-   {
-      align_oc_msg_colon(cpd.settings[UO_align_oc_msg_colon_span].n);
-   }
-   
-   if (cpd.settings[UO_align_oc_msg_string_literal].b)
-   {
-      align_oc_msg_string(cpd.settings[UO_align_oc_msg_colon_span].n);
-   }
-   
    /* Align variable definitions */
    if ((cpd.settings[UO_align_var_def_span].n > 0) ||
        (cpd.settings[UO_align_var_struct_span].n > 0))
@@ -311,7 +314,17 @@ void align_all(void)
    {
       align_same_func_call_params();
    }
+    
+   if (cpd.settings[UO_align_oc_msg_colon_span].n > 0)
+   {
+      align_oc_msg_colon(cpd.settings[UO_align_oc_msg_colon_span].n);
+   }
    
+   if (cpd.settings[UO_align_oc_msg_string_literal].b)
+   {
+      align_oc_msg_string(cpd.settings[UO_align_oc_msg_colon_span].n);
+   }
+    
    /* Just in case something was aligned out of order... do it again */
    quick_align_again();
 }
@@ -1774,17 +1787,74 @@ static void align_left_shift(void)
 }
 
 /**
- * Check if there are any CT_OC_COLONs from pc to end of line.
+ * Check if a line of an ObjC msg send is a string literal and nothing else, e.g.
+ * for msg send 
  *
- * @param prev_result   a bool pointer which is needed to save the previous result
- *                      so that it is possible to have the very last line of a multi
- *                      line OC_MSG return true even though there is no following 
- *                      line with a OC_COLON.
+ * [obj someMethod:
+ *          @"string1",
+ *          @"string2",
+ *          nil];
+ *
+ * lines 2 and 3 would return true.
+ *
+ * @param skip          if pc is a newline and skip is true pc will start at
+ *                      the first chunk of the following line, otherwise
+ *                      parsing will backtrack to the last newline and start
+ *                      there from the chunk following the newline. 
+ *
+ * @param level         the bracket level on which should be parsed 
+ *
+ */
+bool oc_msg_whole_line_is_string_literal(chunk_t *pc, int level, bool skip)
+{
+   bool result = false;
+   
+   /* backtrack to previous newline */
+   if (pc->type == CT_NEWLINE)
+   {
+      if (!skip)
+      {
+         int line = pc->orig_line;
+         pc = chunk_get_prev_nl(pc, CNAV_PREPROC);
+         if (pc == NULL) 
+            return false;
+         
+         if (pc->orig_line < (line - 1))
+         {
+            pc = chunk_get_next_ncnl(pc, CNAV_PREPROC);
+         }
+         pc = chunk_get_next_nc(pc, CNAV_PREPROC);   
+      }
+      else {
+         pc = chunk_get_next_nc(pc, CNAV_PREPROC); 
+      }
+   }
+   
+   if ((pc != NULL) && 
+       (pc->type == CT_STRING) && 
+       (pc->parent_type == CT_OC_MSG) &&
+       (pc->prev != NULL) &&
+       (pc->prev->type == CT_NEWLINE) &&
+       ((pc->next != NULL) &&
+        ((pc->next->type == CT_COMMA) || 
+         (pc->next->type == CT_NEWLINE) ||
+         ((pc->next->type == CT_SQUARE_CLOSE) && 
+          ((pc->next->level <= level) || 
+           (level == -1))))))
+   {
+      result = true;
+   }
+   
+   return result;
+}
+
+/**
+ * Check if there are any CT_OC_COLONs from pc to end of line.
  *
  * @param level         the level of the opening square bracket
  *
  */
-bool line_has_oc_msg_colon(chunk_t *pc, int level)
+bool oc_msg_line_has_colon(chunk_t *pc, int level)
 {
    chunk_t * tmp = pc;
    bool result = false;
@@ -1870,7 +1940,7 @@ bool next_line_has_oc_msg_colon(chunk_t *pc, int level)
    if (!tmp)
       return false;
    
-   return line_has_oc_msg_colon(tmp, level);
+   return oc_msg_line_has_colon(tmp, level);
 }
 
 
@@ -1896,7 +1966,7 @@ bool prev_line_has_oc_msg_colon(chunk_t *pc, int level)
    if (!tmp)
       return false;
    
-   return line_has_oc_msg_colon(tmp, level);
+   return oc_msg_line_has_colon(tmp, level);
 }
 
 /**
@@ -2059,8 +2129,7 @@ static void align_oc_msg_colon(int span)
                                     or types. */
    
    AlignStack cas;               /* colon align stack */
-   AlignStack sas;               /* string align stack */
-   
+    
    int        level;
    int        lcnt;              /* line count with no colon for span. becomes fail-out condition if >= span */
    int        lnum;              /* the line number of a multiline msg send */
@@ -2080,7 +2149,7 @@ static void align_oc_msg_colon(int span)
          continue;
       }
                
-      cas.Start(span);
+      cas.Start(span, 0);
       
       cas.m_oc_msg_align = true;
       
@@ -2109,7 +2178,12 @@ static void align_oc_msg_colon(int span)
          if (pc->level == level)
             break;            
          
-         if (pc->parent_type == CT_COMMENT_WHOLE)
+         if (oc_msg_whole_line_is_string_literal(pc, pc->level, true))
+         {
+            /* skip over lines which only have a @"string literal" end-to-end */
+            pc = chunk_get_next_nl(pc, CNAV_PREPROC);
+         }
+         else if (pc->parent_type == CT_COMMENT_WHOLE)
          {
             ++lcnt;
             if (lcnt >= span)
@@ -2119,8 +2193,8 @@ static void align_oc_msg_colon(int span)
          {
             if (colon != NULL) 
             {
-               colon_col      = colon->orig_col;
-               line_end_col   = pc->orig_col;
+               colon_col      = colon->column;
+               line_end_col   = pc->column;
                
                /* figure out col of first statement chunk of line */
                tmp = chunk_get_prev_nl(colon, CNAV_PREPROC);
@@ -2129,7 +2203,7 @@ static void align_oc_msg_colon(int span)
                   tmp = chunk_get_next_nc(tmp, CNAV_PREPROC);
                   if (tmp != NULL) 
                   {
-                     line_start_col = tmp->orig_col;
+                     line_start_col = tmp->column;
                   }
                }
                
@@ -2171,7 +2245,7 @@ static void align_oc_msg_colon(int span)
                if (align_on_first)
                {
                   colon = pc;
-                  ref_col = colon->orig_col;
+                  ref_col = colon->column;
                   
                   /* skip remaining colons on the same line and 
                      continue with next line or stop on closing square */
@@ -2311,73 +2385,6 @@ static void align_oc_msg_colon(int span)
             
          } // if (pc->parent_type == CT_COMMENT_WHOLE)
          
-//          if ((align_str_literals) && 
-//                   (pc->type == CT_STRING) && 
-//                   (pc->parent_type == CT_OC_MSG))
-//          {
-//             /* align consecutive string literals */
-//             
-//             int first_str_col = 0;
-//             int last_str_line = pc->orig_line;
-//             
-//             /* captures if we have seen the pattern ... :@"string" on a line before
-//                the contestant. if we don't bail out. this is because probably
-//                ... :@"string1"\n@"string2" ... should be treated differently than
-//                ... :\n@"string1"\n@"string2" ... Ideally this shouldn't matter at all
-//                and we should just be able to always align other strings to the first
-//                multi-line spaced string but that would have to be iterated on a per
-//                method call basis and how do you know that you are in a new method call?
-//                The levels won't help here. We would need to parse the whole document and
-//                make a cheap lookup table of each method call a bit like its used for 
-//                dynamic dispatch and that is just overkill for this. */
-//             bool prev_result  = false;    
-//                                         
-//             chunk_t * tmp2 = NULL;
-//             chunk_t * str  = pc;
-//             
-//             if (str != NULL)
-//             {
-//                if (((tmp2 = chunk_get_prev(str, CNAV_PREPROC)) != NULL) && (tmp2->type == CT_OC_COLON))
-//                {
-//                   prev_result = true;
-//                }
-//                
-//                if (first_str_col == 0)
-//                {
-//                   first_str_col = str->column;
-//                }
-//                
-//                while (((str = chunk_get_next_type(str, CT_STRING, str->level, CNAV_PREPROC)) != NULL) && prev_result)
-//                {                  
-//                   /* if we're on the next line and its prev is a newline,
-//                      e.g. CT_STRING is the only type on this line... */
-//                   if ((str->orig_line == (last_str_line + 1)) && 
-//                       (str->prev != NULL) && 
-//                       (str->prev->type == CT_NEWLINE))
-//                   {
-//                      last_str_line  = str->orig_line;
-//                      line_start_col = str->column;
-//                      
-//                      tmp2 = chunk_get_next_nl(pc, CNAV_PREPROC);
-//                      if (tmp2 != NULL)
-//                      {
-//                         line_end_col = tmp2->column;
-//                      }
-//                      
-//                      sas.Add(pc, 0, 0, line_start_col, line_end_col, first_str_col);
-//                      sas.Add(str, 0, 0, line_start_col, line_end_col, first_str_col);
-//                      
-//                      pc = str;
-//                   }
-//                   else
-//                   {
-//                      first_str_col = 0;
-//                      prev_result = false;
-//                   }
-//                }               
-//             }
-//          }
-          
          pc = chunk_get_next(pc, CNAV_PREPROC);
       }
       
@@ -2490,7 +2497,7 @@ static void align_oc_msg_string(int span)
                dynamic dispatch and that is just overkill for this. */
             bool has_colon_string_pattern = false;    
             
-            tmp = NULL;
+            tmp   = NULL;
             cstr  = pc;
             
             if (cstr != NULL)
@@ -2500,40 +2507,63 @@ static void align_oc_msg_string(int span)
                   has_colon_string_pattern = true;
                }
                
-               if (first_str_col == 0)
-               {
-                  first_str_col = cstr->column;
-               }
+               tmp = cstr;
+               cstr = chunk_get_next_type(cstr, CT_NEWLINE, cstr->level, CNAV_PREPROC);
                
-               while (((cstr = chunk_get_next_type(cstr, CT_STRING, cstr->level, CNAV_PREPROC)) != NULL) && (has_colon_string_pattern))
-               {                  
-                  /* if we're on the next line and its prev is a newline,
-                   e.g. CT_STRING is the only type on this line... */
-                  if ((cstr->orig_line == (last_str_line + 1)) && 
-                      (cstr->prev != NULL) && 
-                      (cstr->prev->type == CT_NEWLINE))
+               if ((cstr != NULL) && (oc_msg_whole_line_is_string_literal(cstr, -1, true)) && (has_colon_string_pattern))
+               {
+                  last_str_line  = tmp->orig_line;
+                  first_str_col  = tmp->column;
+                  
+                  tmp = chunk_get_prev_nl(pc, CNAV_PREPROC);
+                  tmp = chunk_get_next_nc(tmp, CNAV_PREPROC);
+                  if (tmp != NULL)
                   {
-                     last_str_line  = cstr->orig_line;
-                     line_start_col = cstr->column;
                      
-                     tmp = chunk_get_next_nl(pc, CNAV_PREPROC);
-                     if (tmp != NULL)
+                     line_start_col = tmp->column;
+                  }
+                  
+                  tmp = chunk_get_next_nl(pc, CNAV_PREPROC);
+                  if (tmp != NULL)
+                  {
+                     line_end_col = tmp->column;
+                  }
+                  
+                  sas.Add(pc, 0, lnum, line_start_col, line_end_col, first_str_col);
+                  
+                  while (((cstr = chunk_get_next_type(cstr, CT_STRING, cstr->level, CNAV_PREPROC)) != NULL))
+                  {
+                     
+                     /* if we're on the next line and its prev is a newline,
+                      e.g. CT_STRING is the only type on this line... */
+                     if (oc_msg_whole_line_is_string_literal(cstr, -1, true))
                      {
-                        line_end_col = tmp->column;
+                        last_str_line  = cstr->orig_line;
+                        line_start_col = cstr->column;
+                        
+                        tmp = chunk_get_next_nl(cstr, CNAV_PREPROC);
+                        if (tmp != NULL)
+                        {
+                           line_end_col = tmp->column;
+                        }
+                        
+                        // sas.Add(pc, 0, 0, line_start_col, line_end_col, first_str_col);
+                        sas.Add(cstr, 0, lnum, line_start_col, line_end_col, first_str_col);
+                        
+                        pc = cstr;
                      }
-                     
-                     sas.Add(pc, 0, 0, line_start_col, line_end_col, first_str_col);
-                     sas.Add(cstr, 0, 0, line_start_col, line_end_col, first_str_col);
-                     
-                     pc = cstr;
-                  }
-                  else
-                  {
-                     first_str_col = 0;
-                     has_colon_string_pattern = false;
-                  }
-               }               
+                     else
+                     {
+                        first_str_col = 0;
+                        has_colon_string_pattern = false;
+                     }
+                  }               
+               }
             }
+         }
+         else if (pc->type == CT_NEWLINE)
+         {
+            ++lnum;
          }
          
          pc = chunk_get_next(pc, CNAV_PREPROC);

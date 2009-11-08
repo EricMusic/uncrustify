@@ -38,6 +38,7 @@ void detect_options(const char *data, int data_len);
 void output_text(FILE *pfile);
 void output_parsed(FILE *pfile);
 void output_options(FILE *pfile);
+void dump_parsed();
 
 
 /*
@@ -99,7 +100,8 @@ chunk_t *align_assign(chunk_t *first, int span, int thresh);
 void quick_align_again(void);
 int oc_msg_colons_for_line(chunk_t *pc, int level, bool skip);
 
-bool line_has_oc_msg_colon(chunk_t *pc, bool *prev_result, int level);
+bool oc_msg_line_has_colon(chunk_t *pc, bool *prev_result, int level);
+bool oc_msg_whole_line_is_string_literal(chunk_t *pc, int level = -1, bool skip = true);
 bool next_line_has_oc_msg_colon(chunk_t *pc, int level = -1);
 bool prev_line_has_oc_msg_colon(chunk_t *pc, int level = -1);
 

@@ -172,7 +172,9 @@ struct align_ptr_t
    chunk_t *next;             /* NULL or the chunk that should be under this one */
    bool    right_align;       /* AlignStack.m_right_align */
    bool    oc_msg_align;      /* AlignStack.m_oc_msg_align */
-   int     oc_msg_line;       /* the line of an oc_msg the stack entry is on */
+   bool    oc_str_align;      /* AlignStack.m_oc_str_align */
+   int     oc_msg_line;       /* the line of an ObjC msg send the stack entry is on */
+   int     oc_msg_lines;      /* the max number of lines of an ObjC msg send */
    int     oc_msg_line_start; /* the start column for the statements of an oc msg send */
    int     oc_msg_line_end;   /* the end column useful for aligning to last colon */
    int     oc_ref_colon;      /* the reference colon on a line. used for calculating deltas */

@@ -1409,6 +1409,7 @@ void space_text(void)
                }
             }
          }
+         
          next->column = column;
 
          LOG_FMT(LSPACE, " = %s @ %d\n",
