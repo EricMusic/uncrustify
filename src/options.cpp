@@ -863,6 +863,8 @@ void register_options(void)
                   "Gap for align_single_line_brace.\n");
    unc_add_option("align_oc_msg_spec_span", UO_align_oc_msg_spec_span, AT_NUM,
                   "The span for aligning ObjC msg spec (0=don't align)", "", 0, 5000);
+   unc_add_option("align_oc_msg_decl_span", UO_align_oc_msg_decl_span, AT_NUM,
+                  "The span for aligning ObjC msg decl (0=don't align)", "", 0, 5000);
    unc_add_option("align_nl_cont", UO_align_nl_cont, AT_BOOL,
                   "Whether to align macros wrapped with a backslash and a newline.\n"
                   "This will not work right if the macro contains a multi-line comment.");

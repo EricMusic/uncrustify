@@ -930,6 +930,7 @@
 		65536846107EB7FA00E08A01 /* width.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = width.cpp; sourceTree = "<group>"; };
 		65536921107EC62D00E08A01 /* Xcode Organizer Actions.xccommands */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "Xcode Organizer Actions.xccommands"; sourceTree = "<group>"; };
 		656E28301082F349007F873A /* selector.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = selector.m; sourceTree = "<group>"; };
+		657421E010A74C9800E8B796 /* msg_decl_align.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = msg_decl_align.m; sourceTree = "<group>"; };
 		6577BFCC10A3ECEC00654E5E /* 30253-align_left_shift.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "30253-align_left_shift.cpp"; sourceTree = "<group>"; };
 		6577C0C210A3F65300654E5E /* colon_align.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = colon_align.m; sourceTree = "<group>"; };
 		6577C0DE10A402F100654E5E /* oc-colon_align.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "oc-colon_align.cfg"; sourceTree = "<group>"; };
@@ -1595,6 +1596,7 @@
 				6553646A107EB6D900E08A01 /* exceptions.m */,
 				6577C0C210A3F65300654E5E /* colon_align.m */,
 				6577C75310A4B86D00654E5E /* colon_and_string_literal_align.m */,
+				657421E010A74C9800E8B796 /* msg_decl_align.m */,
 				6553646B107EB6D900E08A01 /* Fraction.h */,
 				6553646C107EB6D900E08A01 /* Fraction.m */,
 				6553646D107EB6D900E08A01 /* main.m */,

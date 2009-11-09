@@ -24,6 +24,7 @@ static void align_func_params();
 static void align_same_func_call_params();
 static void align_func_proto(int span);
 static void align_oc_msg_spec(int span);
+static void align_oc_msg_decl(int span);
 static void align_typedefs(int span);
 static void align_left_shift(void);
 static void align_oc_msg_colon(int span);
@@ -303,6 +304,12 @@ void align_all(void)
    {
       align_oc_msg_spec(cpd.settings[UO_align_oc_msg_spec_span].n);
    }
+   
+   /* Align multi-line selectors/method signatures in method implementations */
+   if (cpd.settings[UO_align_oc_msg_decl_span].n > 0)
+   {
+      align_oc_msg_decl(cpd.settings[UO_align_oc_msg_decl_span].n);
+   }
 
    /* Align variable defs in function prototypes */
    if (cpd.settings[UO_align_func_params].b)
@@ -353,6 +360,93 @@ static void align_oc_msg_spec(int span)
       }
    }
    as.End();
+}
+
+
+/**
+ * Aligns a multi-line selector of a method implementations on their colons.
+ * Does not split single-line selectors into multi-line ones. Should strive to
+ * leave oneliner msg decls alone (leave that to a mod_ type feature).
+ *
+ * For example
+ *
+ * - (NSDragOperation)tableView:(NSTableView*)tv
+ * validateDrop:(id <NSDraggingInfo>)info
+ * proposedRow:(NSInteger)row
+ * proposedDropOperation:(NSTableViewDropOperation)operation
+ * {
+ *    // ...
+ * }
+ *
+ * becomes
+ *
+ * - (NSDragOperation)tableView:(NSTableView*)tv
+ *                 validateDrop:(id <NSDraggingInfo>)info
+ *                  proposedRow:(NSInteger)row
+ *        proposedDropOperation:(NSTableViewDropOperation)operation
+ * {
+ *    // ...
+ * }
+ *
+ */
+static void align_oc_msg_decl(int span)
+{
+   chunk_t    *pc;
+   chunk_t    *tmp;
+   AlignStack as;    /* align stack for chunks preceding a msg colon */
+   AlignStack cas;   /* msg colon align stack */
+   
+   LOG_FMT(LALIGN, "%s\n", __func__);
+
+   cas.Start(span);
+   as.Start(span);
+   
+   as.m_right_align = true;
+   
+   for (pc = chunk_get_head(); pc != NULL; pc = chunk_get_next_nc(pc))
+   {
+      if (pc->parent_type != CT_OC_MSG_DECL)
+         continue;
+      
+      if (chunk_is_newline(pc))
+      {
+         as.NewLines(pc->nl_count);
+         cas.NewLines(pc->nl_count);
+      }
+      else if ((pc->type == CT_OC_SCOPE))
+      {
+         /* if this is the beginning of a msg decl jump ahead to the line end (CT_NEWLINE)
+            and check if that chunk has either a BRACE_OPEN preceding or following it to
+            determine if the msg decl is spaced out over multiple lines or just one (most common) */
+         if ((tmp = chunk_get_next_nl(pc)) != NULL)
+         {
+            if (((tmp->prev != NULL) && (tmp->prev->type == CT_BRACE_OPEN)) ||
+                ((tmp->next != NULL) && (tmp->next->type == CT_BRACE_OPEN)))
+            {
+               pc = tmp;
+               continue;
+            }
+         }
+      }
+      else if ((pc->type == CT_OC_COLON)) 
+      {
+         cas.Add(pc);
+         
+         tmp = chunk_get_prev_nc(pc, CNAV_PREPROC);
+         if (tmp != NULL)
+         {
+            /* we just add the previous chunk uncoditionally here
+               as ObjC msg decls follow a very tight pattern */
+            as.Add(tmp);
+         }
+      }
+      else if ((pc->type == CT_BRACE_OPEN))
+      {
+         break;
+      }
+   }
+   as.End();
+   cas.End();
 }
 
 

@@ -367,6 +367,7 @@ enum uncrustify_options
    UO_align_single_line_brace,     // align the open brace of single line functions
    UO_align_single_line_brace_gap, // gap for align_single_line_brace
    UO_align_oc_msg_spec_span,      // align ObjC msg spec
+   UO_align_oc_msg_decl_span,      // align ObjC msg decl
    UO_align_number_left,           // left-align numbers (not fully supported, yet)
    UO_align_typedef_span,          // align single-line typedefs
    UO_align_typedef_gap,           // minimum spacing
