@@ -942,7 +942,7 @@
 		6577CA1410A4DEBC00654E5E /* 50093-misc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "50093-misc.m"; sourceTree = "<group>"; };
 		659F8D37108A9A380004E4CB /* complex_method.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = complex_method.m; sourceTree = "<group>"; };
 		659F8DA6108AD5AC0004E4CB /* 50040-complex_method.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "50040-complex_method.m"; sourceTree = "<group>"; };
-		659F8DD8108ADCB30004E4CB /* objc_complex_method.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = objc_complex_method.cfg; sourceTree = "<group>"; };
+		659F8DD8108ADCB30004E4CB /* objc_complex_method.cfg */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = text; path = objc_complex_method.cfg; sourceTree = "<group>"; tabWidth = 4; };
 		65A462A61092CB7F007F6EBA /* sp_after_oc_block_caret_add.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = sp_after_oc_block_caret_add.cfg; sourceTree = "<group>"; };
 		65A462A71092CB7F007F6EBA /* sp_after_oc_block_caret_force.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = sp_after_oc_block_caret_force.cfg; sourceTree = "<group>"; };
 		65A462A81092CB7F007F6EBA /* sp_after_oc_block_caret_remove.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = sp_after_oc_block_caret_remove.cfg; sourceTree = "<group>"; };

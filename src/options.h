@@ -158,7 +158,7 @@ enum uncrustify_options
     
    UO_indent_preserve_in_oc_msg_send,       // avoid indentation of text in oc msg sends and oc blocks. 
                                             // colons in oc msg sends will still be aligned according to
-                                            // their own settings in UO_align (see UO_align_oc_msg_colon_span).
+                                            // their own settings in UO_align (see UO_align_oc_msg_colon).
 
 
    /*
@@ -380,7 +380,7 @@ enum uncrustify_options
    //UO_align_struct_array_brace,  // TODO: align array of structure initializers
    UO_align_left_shift,
    
-   UO_align_oc_msg_colon_span,      // the span for aligning ObjC msg sends on colons
+   UO_align_oc_msg_colon,           // align ObjC msg sends on colons
    UO_align_oc_msg_on_first_colon,  // if a line has multiple colons in a row, align the following lines 
                                     // belonging to the same msg send to the first or the last of these colons.
    

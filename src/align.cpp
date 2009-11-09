@@ -322,14 +322,14 @@ void align_all(void)
       align_same_func_call_params();
    }
     
-   if (cpd.settings[UO_align_oc_msg_colon_span].n > 0)
+   if (cpd.settings[UO_align_oc_msg_colon].b)
    {
-      align_oc_msg_colon(cpd.settings[UO_align_oc_msg_colon_span].n);
+      align_oc_msg_colon(1);
    }
    
    if (cpd.settings[UO_align_oc_msg_string_literal].b)
    {
-      align_oc_msg_string(cpd.settings[UO_align_oc_msg_colon_span].n);
+      align_oc_msg_string(1);
    }
     
    /* Just in case something was aligned out of order... do it again */
@@ -2280,8 +2280,6 @@ static void align_oc_msg_colon(int span)
          else if (pc->parent_type == CT_COMMENT_WHOLE)
          {
             ++lcnt;
-            if (lcnt >= span)
-               break;
          }
          else if (chunk_is_newline(pc))
          {

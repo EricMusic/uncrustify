@@ -875,11 +875,11 @@ void register_options(void)
    unc_add_option("align_left_shift", UO_align_left_shift, AT_BOOL,
                   "Align lines that start with '<<' with previous '<<'. Default=true");
    
-   unc_add_option("align_oc_msg_colon_span", UO_align_oc_msg_colon_span, AT_NUM,
+   unc_add_option("align_oc_msg_colon", UO_align_oc_msg_colon, AT_BOOL,
                   "Span for aligning parameters in an ObjC message call on the ':' (0=don't align)\n"
                   "For this to work make sure you don't have mixed tabs and spaces.\n"
                   "Note that encountering the closing square bracket belonging to the same level\n"
-                  "as the opening square will count as fail-out for doing any further alignment.", 0, 5000);
+                  "as the opening square will count as fail-out for doing any further alignment.");
    
    unc_add_option("align_oc_msg_string_literal", UO_align_oc_msg_string_literal, AT_BOOL,
                   "Try to align consecutive string linteral parameters in an ObjC msg send.\n"

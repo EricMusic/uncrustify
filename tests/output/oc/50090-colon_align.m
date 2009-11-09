@@ -20,7 +20,7 @@
                centerAt:[xAxisCenterPoint msg:arg] revolveAround:[yAxisCenterPoint intValue]
 /*                    min:&minValue */
                      max:&maxValue
-                sel:@selector(blaMsg:)];
+                    sel:@selector(blaMsg:)];
 
 // test: and now do the same inside a method to test if other indentation
 // will be done correctly

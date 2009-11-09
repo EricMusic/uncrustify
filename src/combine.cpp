@@ -3714,7 +3714,7 @@ static void handle_oc_message_decl(chunk_t *pc)
    /* Mark everything */
    tmp = pc;
    while ((tmp = chunk_get_next(tmp)) != NULL)
-   {
+   {      
       if ((tmp->type == CT_SEMICOLON) ||
           (tmp->type == CT_BRACE_OPEN))
       {
